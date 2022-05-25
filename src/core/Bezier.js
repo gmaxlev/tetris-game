@@ -57,6 +57,31 @@ export class Bezier {
     );
   }
 
+  getLength() {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', this.toSVG());
+    return path.getTotalLength();
+  }
+
+  toSVG() {
+    const s = ['M', this.curves[0].x, this.curves[0].y];
+
+    if (this.type === Bezier.TYPES.LINEAR) {
+      s.push('L');
+      s.push(this.curves[1].x);
+      s.push(this.curves[1].y);
+    } else {
+      s.push(this.type === Bezier.TYPES.QUADRATIC ? 'Q' : 'C');
+
+      for (let i = 1; i < this.curves.length; i++) {
+        s.push(this.curves[i].x);
+        s.push(this.curves[i].y);
+      }
+    }
+
+    return s.join(' ');
+  }
+
   getPoint(t) {
     if (this.type === Bezier.TYPES.LINEAR) {
       return this.getPointInLineCurve(t);
@@ -73,8 +98,8 @@ export class Bezier {
 
   static TYPES = {
     LINEAR: 0,
-    QUADRATIC: 0,
-    CUBIC: 0,
+    QUADRATIC: 1,
+    CUBIC: 2,
   };
 
   static computePointCubicCurve(t, c1, c2, c3, c4) {

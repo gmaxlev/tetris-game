@@ -5,6 +5,11 @@ import { Tetris } from './game/Tetris';
 const rootGameObject = new RootGameObject();
 
 rootGameObject.canvas.style.margin = '0 auto';
+document.body.style.margin = '0px';
+document.body.style.height = '100vh';
+document.body.style.display = 'flex';
+document.body.style.alignItems = 'center';
+document.body.style.justifyContent = 'center';
 
 const game = new Game({
   canvas: rootGameObject.canvas,
