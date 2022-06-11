@@ -1,18 +1,24 @@
-import { Stream } from './Stream';
-import { Game } from './Game';
-import { EventEmitter } from './EventEmitter';
+import { Stream } from "./Stream";
+import { Game } from "./Game";
+import { EventEmitter } from "./EventEmitter";
 
 export class KeyFrames {
   static EVENTS = {
-    START: 0,
-    RESTART: 1,
-    STOP: 2,
-    PAUSE: 3,
+    START: Symbol("START"),
+    RESTART: Symbol("RESTART"),
+    STOP: Symbol("STOP"),
+    PAUSE: Symbol("PAUSE"),
   };
 
   constructor({
-    fn, total, loop = false, exact = false, start = false,
-    times = 1, pingPong = false, interceptor = null,
+    fn,
+    total,
+    loop = false,
+    exact = false,
+    start = false,
+    times = 1,
+    pingPong = false,
+    interceptor = null,
   }) {
     this.events = new EventEmitter();
     this.update = this.update.bind(this);
@@ -45,7 +51,10 @@ export class KeyFrames {
       });
     }
 
-    if ((this.direction && this.current >= this.total) || (!this.direction && this.current <= 0)) {
+    if (
+      (this.direction && this.current >= this.total) ||
+      (!this.direction && this.current <= 0)
+    ) {
       this.times += 1;
 
       if (this.pingPong) {
@@ -65,7 +74,9 @@ export class KeyFrames {
     }
 
     if (this.pingPong) {
-      this._updateTime(this.direction ? this.current + Game.dt : this.current - Game.dt);
+      this._updateTime(
+        this.direction ? this.current + Game.dt : this.current - Game.dt
+      );
     } else {
       this._updateTime(this.current + Game.dt);
     }
@@ -74,7 +85,7 @@ export class KeyFrames {
   stop() {
     this.isStopped = true;
     this.isActive = false;
-    this.direction = 0;
+    this.direction = true;
     this.times = 0;
     this._updateTime(0);
     this.stream.stop();
@@ -82,22 +93,27 @@ export class KeyFrames {
   }
 
   pause() {
-    this.isStopped = true;
-    this.stream.stop();
-    this.events.emit(KeyFrames.EVENTS.PAUSE);
+    if (!this.isStopped) {
+      this.isActive = false;
+      this.isStopped = true;
+      this.stream.stop();
+      this.events.emit(KeyFrames.EVENTS.PAUSE);
+    }
   }
 
   start() {
-    this.isStopped = false;
-    this.isActive = true;
-    this.stream.continue();
-    this.events.emit(KeyFrames.EVENTS.START);
+    if (!this.isActive) {
+      this.isStopped = false;
+      this.isActive = true;
+      this.stream.continue();
+      this.events.emit(KeyFrames.EVENTS.START);
+    }
   }
 
   restart() {
     this.isStopped = false;
     this.isActive = true;
-    this.direction = 0;
+    this.direction = true;
     this.times = 0;
     this._updateTime(0);
     this.stream.continue();
@@ -110,7 +126,8 @@ export class KeyFrames {
 
   _updateTime(time) {
     this.current = this.formatTime(time);
-    this.progress = this.interceptor ? this.interceptor(this.current / this.total)
+    this.progress = this.interceptor
+      ? this.interceptor(this.current / this.total)
       : this.current / this.total;
     this.time = this.progress * this.total;
   }

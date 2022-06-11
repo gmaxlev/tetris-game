@@ -1,11 +1,11 @@
-import { Resource } from './Resource';
-import { EventEmitter } from '../EventEmitter';
+import { Resource } from "./Resource";
+import { EventEmitter } from "../EventEmitter";
 
 class Resources {
   static EVENTS = {
-    LOAD_PROGRESS_EVENT: 1,
-    LOAD_ERROR_EVENT: 2,
-    LOAD_EVENT: 3,
+    LOAD_PROGRESS_EVENT: Symbol("LOAD_PROGRESS_EVENT"),
+    LOAD_ERROR_EVENT: Symbol("LOAD_ERROR_EVENT"),
+    LOAD_EVENT: Symbol("LOAD_ERROR_EVENT"),
   };
 
   constructor() {
@@ -18,16 +18,24 @@ class Resources {
   }
 
   add(keyOrObject, resource) {
-    if (typeof keyOrObject === 'object' && !resource) {
+    if (typeof keyOrObject === "object" && !resource) {
       for (const key in keyOrObject) {
         this.add(key, keyOrObject[key]);
       }
       return;
     }
     if (this.map.has(keyOrObject)) {
-      throw new Error(`A resource with the key ${keyOrObject} have already existed`);
+      throw new Error(
+        `A resource with the key ${keyOrObject} have already existed`
+      );
     }
     this.map.set(keyOrObject, resource);
+  }
+
+  addMap(map) {
+    for (const key in map) {
+      this.add(key, map[key]);
+    }
   }
 
   load() {
@@ -68,7 +76,10 @@ class Resources {
       total += resource.loadingProgress;
     });
     this.loadingProgress = total / this.map.size;
-    this.events.emit(Resources.EVENTS.LOAD_PROGRESS_EVENT, this.loadingProgress);
+    this.events.emit(
+      Resources.EVENTS.LOAD_PROGRESS_EVENT,
+      this.loadingProgress
+    );
   }
 
   _checkForCompleteLoading() {

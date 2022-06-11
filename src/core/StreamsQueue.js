@@ -6,7 +6,7 @@ export class StreamsQueue {
   child(stream) {
     this.queue = this.queue.filter((item) => item.stream !== stream);
     this.queue.push({
-      type: 'child',
+      type: "child",
       stream,
     });
   }
@@ -14,7 +14,7 @@ export class StreamsQueue {
   destroy(stream) {
     this.queue = this.queue.filter((item) => item.stream !== stream);
     this.queue.push({
-      type: 'destroy',
+      type: "destroy",
       stream,
     });
   }
@@ -22,11 +22,12 @@ export class StreamsQueue {
   call() {
     for (let i = 0; i < this.queue.length; i++) {
       const item = this.queue[i];
-      if (item.type === 'destroy') {
+      if (item.type === "destroy") {
         item.stream.destroy();
-      } else if (item.type === 'child') {
+      } else if (item.type === "child") {
         item.stream.parent.child(item.stream);
       }
     }
+    this.queue = [];
   }
 }

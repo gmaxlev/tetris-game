@@ -1,29 +1,33 @@
-import { EventEmitter } from './EventEmitter';
-import { Rectangle } from './Rectangle';
+import { EventEmitter } from "./EventEmitter";
+import { Rectangle } from "./Rectangle";
 
-import { Unsubscribes } from './Unsubscribes';
-import { Destroyings } from './Destroyings';
+import { Unsubscribes } from "./Unsubscribes";
+import { Destroyings } from "./Destroyings";
 
 export class GameObject {
   static EVENTS = {
-    MARK_FOR_UPDATE: 0,
-    UNMARK_FOR_UPDATE: 1,
-    BEFORE_DESTROYING: 2,
+    MARK_FOR_UPDATE: Symbol("MARK_FOR_UPDATE"),
+    UNMARK_FOR_UPDATE: Symbol("UNMARK_FOR_UPDATE"),
+    BEFORE_DESTROYING: Symbol("BEFORE_DESTROYING"),
   };
 
-  constructor({
-    width = 300, height = 300,
-  }) {
+  static STATES = {
+    SHOWN: 0,
+    HIDDEN: 1,
+  };
+
+  constructor({ width = 300, height = 300 }) {
     this.events = new EventEmitter();
     this.unsubscribes = new Unsubscribes();
     this.destroyings = new Destroyings();
     this.size = new Rectangle(width, height);
-    this.canvas = document.createElement('canvas');
+    this.canvas = document.createElement("canvas");
     this.canvas.width = width;
     this.canvas.height = height;
-    this.ctx = this.canvas.getContext('2d');
-    this._marksForUpdate = 0;
-    this._marksFramesForUpdate = 0;
+    this.ctx = this.canvas.getContext("2d");
+    this.marksForUpdate = 0;
+    this.marksFramesForUpdate = 0;
+    this._state = GameObject.STATES.SHOWN;
     this._connected = 0;
     this._connectedMap = new WeakMap();
     this._destroyed = false;
@@ -38,12 +42,18 @@ export class GameObject {
     this._connectedMap.set(gameObject, unsubscribes);
 
     unsubscribes.add([
-      gameObject.events.subscribe(GameObject.EVENTS.MARK_FOR_UPDATE, (count) => {
-        this.markForUpdate(count);
-      }),
-      gameObject.events.subscribe(GameObject.EVENTS.UNMARK_FOR_UPDATE, (count) => {
-        this.unmarkForUpdate(count);
-      }),
+      gameObject.events.subscribe(
+        GameObject.EVENTS.MARK_FOR_UPDATE,
+        (count) => {
+          this.markForUpdate(count);
+        }
+      ),
+      gameObject.events.subscribe(
+        GameObject.EVENTS.UNMARK_FOR_UPDATE,
+        (count) => {
+          this.unmarkForUpdate(count);
+        }
+      ),
 
       gameObject.events.subscribe(GameObject.EVENTS.BEFORE_DESTROYING, () => {
         this.disconnect(gameObject);
@@ -55,8 +65,8 @@ export class GameObject {
       }),
     ]);
 
-    if (gameObject._marksForUpdate) {
-      this.markForUpdate(gameObject._marksForUpdate);
+    if (gameObject.marksForUpdate) {
+      this.markForUpdate(gameObject.marksForUpdate);
     }
 
     gameObject._connected = true;
@@ -67,48 +77,58 @@ export class GameObject {
     unsubscribes.call();
     gameObject._connected -= 0;
 
-    if (gameObject._marksForUpdate) {
-      this.unmarkForUpdate(gameObject._marksForUpdate);
+    if (gameObject.marksForUpdate) {
+      this.unmarkForUpdate(gameObject.marksForUpdate);
     }
 
     return this._connectedMap.delete(gameObject);
   }
 
   markForUpdate(count = 1) {
-    this._marksForUpdate += count;
+    this.marksForUpdate += count;
     this.events.emit(GameObject.EVENTS.MARK_FOR_UPDATE, count);
   }
 
   unmarkForUpdate(count = 1) {
-    if (this._marksForUpdate === 0) {
-      console.warn('Can not call unmarkForUpdate() with 0 _marksForUpdate');
+    if (this.marksForUpdate === 0) {
+      console.warn("Can not call unmarkForUpdate() with 0 marksForUpdate");
       return;
     }
-    this._marksForUpdate -= count;
+    this.marksForUpdate -= count;
     this.events.emit(GameObject.EVENTS.UNMARK_FOR_UPDATE, count);
   }
 
   markFramesForUpdate(count = 1) {
-    if (count > this._marksFramesForUpdate) {
-      if (this._marksFramesForUpdate === 0) {
+    if (count > this.marksFramesForUpdate) {
+      if (this.marksFramesForUpdate === 0) {
         this.markForUpdate();
       }
-      this._marksFramesForUpdate = count;
+      this.marksFramesForUpdate = count;
     }
   }
 
   update() {
-    if (this._marksForUpdate) {
+    if (this.marksForUpdate) {
       this.clear();
       this.draw();
-      if (this._marksFramesForUpdate > 0) {
-        this._marksFramesForUpdate -= 1;
-        if (this._marksFramesForUpdate === 0) {
+      if (this.marksFramesForUpdate > 0) {
+        this.marksFramesForUpdate -= 1;
+        if (this.marksFramesForUpdate === 0) {
           this.unmarkForUpdate();
         }
       }
     }
     return this.canvas;
+  }
+
+  setState(state) {
+    this._state = state;
+  }
+
+  drawTo(ctx, x = 0, y = 0) {
+    if (this._state === GameObject.STATES.SHOWN) {
+      ctx.drawImage(this.update(), x, y);
+    }
   }
 
   clear() {
@@ -119,13 +139,12 @@ export class GameObject {
     if ((isConnected && this._connected > 1) || this._destroyed) {
       return;
     }
-
     this.events.emit(GameObject.EVENTS.BEFORE_DESTROYING);
     this.unsubscribes.call();
     this.destroyings.call();
     this.events.clear();
-    if (!isConnected && this._marksForUpdate > 0) {
-      this.unmarkForUpdate(this._marksForUpdate);
+    if (!isConnected && this.marksForUpdate > 0) {
+      this.unmarkForUpdate(this.marksForUpdate);
     }
     this._destroyed = true;
   }

@@ -1,4 +1,4 @@
-import { ResourceLoader } from './ResourceLoader';
+import { ResourceLoader } from "./ResourceLoader";
 
 class FontResourceLoader extends ResourceLoader {
   constructor(mime, blob, config) {
@@ -13,7 +13,9 @@ class FontResourceLoader extends ResourceLoader {
       .arrayBuffer()
       .then((result) => {
         this.font = new FontFace(this.config.fontName, result);
-        this.font.weight = this.config.fontWeight ? this.config.fontWeight : '400';
+        this.font.weight = this.config.fontWeight
+          ? this.config.fontWeight
+          : "400";
         document.fonts.add(this.font);
         this.events.emit(ResourceLoader.EVENTS.LOAD_EVENT, this.font);
       })

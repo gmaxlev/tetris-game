@@ -1,4 +1,4 @@
-import { StreamsQueue } from './StreamsQueue';
+import { StreamsQueue } from "./StreamsQueue";
 
 export class Stream {
   static processing = false;
@@ -9,7 +9,7 @@ export class Stream {
     this.fn = fn;
     this.children = [];
     this.parent = null;
-    this.isStopped = !start;
+    this.isActive = start;
     this.isDeleted = false;
   }
 
@@ -21,9 +21,6 @@ export class Stream {
       return;
     }
 
-    if (stream.parent) {
-      return;
-    }
     stream.parent = this;
     if (Stream.processing) {
       Stream.queue.child(stream);
@@ -34,7 +31,7 @@ export class Stream {
   }
 
   call() {
-    if (this.isStopped || this.isDeleted) {
+    if (!this.isActive || this.isDeleted) {
       return;
     }
 
@@ -42,7 +39,7 @@ export class Stream {
       this.fn();
     }
 
-    if (this.isStopped || this.isDeleted) {
+    if (!this.isActive || this.isDeleted) {
       return;
     }
 
@@ -68,10 +65,10 @@ export class Stream {
   }
 
   stop() {
-    this.isStopped = true;
+    this.isActive = false;
   }
 
   continue() {
-    this.isStopped = false;
+    this.isActive = true;
   }
 }

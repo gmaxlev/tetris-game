@@ -1,14 +1,14 @@
-import { ResourceLoader } from './ResourceLoader';
+import { ResourceLoader } from "./ResourceLoader";
 
 class ImageResourceLoader extends ResourceLoader {
   constructor(mime, blob) {
     super();
     this._blob = blob;
     this.el = new Image();
-    this.el.addEventListener('load', () => {
+    this.el.addEventListener("load", () => {
       this.events.emit(ResourceLoader.EVENTS.LOAD_EVENT, this.el);
     });
-    this.el.addEventListener('error', (e) => {
+    this.el.addEventListener("error", (e) => {
       this.events.emit(ResourceLoader.EVENTS.LOAD_ERROR_EVENT, e);
     });
   }

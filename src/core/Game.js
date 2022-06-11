@@ -1,14 +1,11 @@
-import { Stream } from './Stream';
+import { Stream } from "./Stream";
 
 export class Game {
   static dt = 0;
 
   static stream = new Stream({ start: true });
 
-  constructor({
-    update,
-    canvas,
-  }) {
+  constructor({ update, canvas }) {
     this.update = update;
     this.time = 0;
     this.canvas = canvas;

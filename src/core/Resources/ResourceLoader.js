@@ -1,9 +1,9 @@
-import { EventEmitter } from '../EventEmitter';
+import { EventEmitter } from "../EventEmitter";
 
 class ResourceLoader {
   static EVENTS = {
-    LOAD_ERROR_EVENT: 1,
-    LOAD_EVENT: 2,
+    LOAD_ERROR_EVENT: Symbol("LOAD_ERROR_EVENT"),
+    LOAD_EVENT: Symbol("LOAD_EVENT"),
   };
 
   constructor() {
