@@ -1,4 +1,4 @@
-import { EventEmitter } from "../../core/EventEmitter";
+import { EventEmitter } from "tiny-game-engine";
 
 export const Blackout = {
   EVENTS: {
@@ -13,3 +13,5 @@ export const Blackout = {
     this.events.emit(Blackout.EVENTS.DARK);
   },
 };
+
+console.log(Blackout);

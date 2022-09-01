@@ -1,6 +1,6 @@
-import { Game } from "./core/Game";
-import { RootGameObject } from "./game/RootGameObject";
-import { Tetris } from "./game/Tetris";
+import { InteractiveDisplay, Game } from "tiny-game-engine";
+import { Tetris } from "./tetris/Tetris";
+import { RootGameObject } from "./root/RootGameObject";
 
 const rootGameObject = new RootGameObject();
 
@@ -11,6 +11,7 @@ document.body.style.height = "100vh";
 document.body.style.display = "flex";
 document.body.style.alignItems = "center";
 document.body.style.justifyContent = "center";
+document.body.style.backgroundColor = "black";
 
 const game = new Game({
   canvas: rootGameObject.canvas,
@@ -19,11 +20,12 @@ const game = new Game({
   },
 });
 
-window.a = rootGameObject;
-window.g = Game;
+const interactiveDisplay = new InteractiveDisplay({
+  htmlEl: rootGameObject.canvas,
+});
+Game.stream.child(interactiveDisplay.stream);
+interactiveDisplay.run();
 
 Game.stream.child(Tetris.stream);
 game.run();
 Tetris.resources.load();
-
-document.body.style.backgroundColor = "black";

@@ -1,15 +1,21 @@
-import { GameObject } from "../core/GameObject";
-import { Tetris } from "./Tetris";
-import { Game } from "../core/Game";
-import { KeyFrames } from "../core/KeyFrames";
-import { Bezier } from "../core/Bezier";
-import { Stream } from "../core/Stream";
+import {
+  GameObjectNode,
+  Stream,
+  Game,
+  KeyFrames,
+  Bezier,
+} from "tiny-game-engine";
+import { Tetris } from "../tetris/Tetris";
 
 const INDICATOR_WIDTH = 400;
 const INDICATOR_HEIGHT = 20;
 const BORDER_PADDING = 10;
 
-export class LoadingGameObject extends GameObject {
+export class LoadingGameObject extends GameObjectNode {
+  static MARKS = {
+    INFINITY: Symbol(Infinity),
+  };
+
   constructor(width, height) {
     super({ width, height });
 
@@ -65,13 +71,13 @@ export class LoadingGameObject extends GameObject {
       this.stream,
     ]);
 
-    this.destroyings.add([
-      this.decreaseHeightKeyFrames,
-      this.decreaseWidthKeyFrames,
-      this.stream,
+    this.destroyingJobs.add([
+      () => this.decreaseHeightKeyFrames.destroy(),
+      () => this.decreaseWidthKeyFrames.destroy(),
+      () => this.stream.destroy(),
     ]);
 
-    this.markForUpdate();
+    this.markForUpdate(LoadingGameObject.MARKS.INFINITY);
   }
 
   draw() {

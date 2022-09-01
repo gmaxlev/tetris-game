@@ -1,14 +1,16 @@
-import { GameObject } from "../../core/GameObject";
+import { GameObjectNode, Stream, Game } from "tiny-game-engine";
 import { Blackout } from "./index";
-import { Game } from "../../core/Game";
-import { Stream } from "../../core/Stream";
 
 const SPEED = 0.5;
 
-export class BlackoutGameObject extends GameObject {
+export class BlackoutGameObject extends GameObjectNode {
   static STATES = {
     DARK: 1,
     LIGHT: 0,
+  };
+
+  static MARKS = {
+    MARK: Symbol("MARK"),
   };
 
   constructor({
@@ -16,23 +18,29 @@ export class BlackoutGameObject extends GameObject {
     height,
     defaultState = BlackoutGameObject.STATES.DARK,
   }) {
-    super({ width, height });
+    super({
+      width,
+      height,
+      visible: defaultState !== BlackoutGameObject.STATES.DARK,
+    });
 
-    this.aim = 0;
+    this.destination = 0;
     this.state = defaultState;
 
     this.stream = new Stream({
       start: false,
       fn: () => {
-        if (this.aim > this.state) {
-          this.state = Math.min(1, this.state + Game.dt * (SPEED / 1000));
-        } else if (this.aim < this.state) {
-          this.state = Math.max(0, this.state - Game.dt * (SPEED / 1000));
+        const progress = Game.dt * (SPEED / 1000);
+
+        if (this.destination > this.state) {
+          this.state = Math.min(1, this.state + progress);
+        } else if (this.destination < this.state) {
+          this.state = Math.max(0, this.state - progress);
         } else {
           this.stream.stop();
-          this.unmarkForUpdate();
+          this.unmarkForUpdate(BlackoutGameObject.MARKS.MARK);
           if (this.state === 0) {
-            this.setState(GameObject.STATES.HIDDEN);
+            this.hide();
           }
         }
       },
@@ -43,23 +51,21 @@ export class BlackoutGameObject extends GameObject {
     Blackout.events.subscribe(Blackout.EVENTS.LIGHT, () => {
       if (!this.stream.isActive) {
         this.stream.continue();
-        this.markForUpdate();
+        this.markForUpdate(BlackoutGameObject.MARKS.MARK);
       }
-      this.setState(GameObject.STATES.SHOWN);
-      this.aim = 0;
+      this.show();
+      this.destination = 0;
     });
 
     Blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
       if (!this.stream.isActive) {
         this.stream.continue();
-        this.markForUpdate();
+        this.markForUpdate(BlackoutGameObject.MARKS.MARK);
       }
 
-      this.setState(GameObject.STATES.SHOWN);
-      this.aim = 1;
+      this.show();
+      this.destination = 1;
     });
-
-    this.setState(GameObject.STATES.HIDDEN);
   }
 
   draw() {

@@ -1,7 +1,5 @@
-import { Resources } from "../core/Resources/Resources";
-import { EventEmitter } from "../core/EventEmitter";
-import { Resource } from "../core/Resources/Resource";
-import { Stream } from "../core/Stream";
+import { Resources, Resource, Stream, EventEmitter } from "tiny-game-engine";
+import { Menu } from "../menu/Menu";
 
 export const Tetris = new (class TetrisGame {
   constructor() {
@@ -21,6 +19,11 @@ export const Tetris = new (class TetrisGame {
     this.resources = new Resources();
     this.resources.addMap(this.resourcesMap);
 
-    // this.resources.add('test', new Resource('https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885__480.jpg'));
+    /** @type {Menu} */
+    this.menu = null;
+  }
+
+  makeMenu() {
+    this.menu = new Menu();
   }
 })();

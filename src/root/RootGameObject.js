@@ -1,13 +1,20 @@
-import { GameObject } from "../core/GameObject";
-import { LoadingGameObject } from "./LoadingGameObject";
-import { BlackoutGameObject } from "./blackout/BlackoutGameObject";
-import { BackgroundGameObject } from "./BackgroundGameObject";
-import { Blackout } from "./blackout";
-import { World } from "./World";
+import { GameObjectNode } from "tiny-game-engine";
+import { LoadingGameObject } from "../loading/LoadingGameObject";
+import { BlackoutGameObject } from "../blackout/BlackoutGameObject";
+import { BackgroundGameObject } from "../background/BackgroundGameObject";
+import { Blackout } from "../blackout";
+import { World } from "../world/World";
 
-export class RootGameObject extends GameObject {
+export class RootGameObject extends GameObjectNode {
+  static WIDTH = 600;
+
+  static HEIGHT = 800;
+
   constructor() {
-    super({ width: 600, height: 800 });
+    super({
+      width: RootGameObject.WIDTH,
+      height: RootGameObject.HEIGHT,
+    });
 
     this.loadingGameObject = new LoadingGameObject(
       this.size.width,
@@ -19,10 +26,11 @@ export class RootGameObject extends GameObject {
       height: this.size.height,
       defaultState: BlackoutGameObject.STATES.DARK,
     });
+
     this.backgroundGameObject = null;
 
     this.loadingGameObject.events.subscribeOnce(
-      GameObject.EVENTS.BEFORE_DESTROYING,
+      GameObjectNode.EVENTS.BEFORE_DESTROYING,
       () => {
         this.loadingGameObject = null;
         this.backgroundGameObject = new BackgroundGameObject(

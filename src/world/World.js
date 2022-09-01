@@ -1,9 +1,11 @@
-import { Vector2 } from "../core/Vector2";
-import { PolyBezier } from "../core/PolyBezier";
-import { Bezier } from "../core/Bezier";
-import { KeyFrames } from "../core/KeyFrames";
-import { EventEmitter } from "../core/EventEmitter";
-import { Tetris } from "./Tetris";
+import {
+  Vector2,
+  KeyFrames,
+  Bezier,
+  PolyBezier,
+  EventEmitter,
+} from "tiny-game-engine";
+import { Tetris } from "../tetris/Tetris";
 
 export const World = new (class World {
   constructor() {
@@ -29,26 +31,28 @@ export const World = new (class World {
       ]),
     ]);
 
-    this.keyFrames = new KeyFrames({
+    this.toGameKeyFrames = new KeyFrames({
       total: 5000,
       exact: true,
       fn: () => {
-        this.camera.y = this.toGameCurve.getPoint(this.keyFrames.progress).y;
+        this.camera.y = this.toGameCurve.getPoint(
+          this.toGameKeyFrames.progress
+        ).y;
       },
     });
 
-    this.keyFrames.events.subscribe(KeyFrames.EVENTS.PAUSE, () => {
+    this.toGameKeyFrames.events.subscribe(KeyFrames.EVENTS.PAUSE, () => {
       this.events.emit(this.EVENTS.END_TRANSITION_TO_GAME);
     });
 
-    Tetris.stream.child(this.keyFrames.stream);
+    Tetris.stream.child(this.toGameKeyFrames.stream);
   }
 
   toGame() {
-    if (this.keyFrames.isActive) {
+    if (this.toGameKeyFrames.isActive) {
       return;
     }
     this.events.emit(this.EVENTS.START_TRANSITION_TO_GAME);
-    this.keyFrames.start();
+    this.toGameKeyFrames.start();
   }
 })();
