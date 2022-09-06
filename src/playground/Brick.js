@@ -20,7 +20,7 @@ export class Brick {
   }
 
   fall(x, y) {
-    console.log("falling", x, y);
+    console.log("fall", x, y);
   }
 
   changeGameMapCell(gameMapCell) {
