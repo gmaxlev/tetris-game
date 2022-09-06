@@ -4,6 +4,8 @@ import { BlackoutGameObject } from "../blackout/BlackoutGameObject";
 import { BackgroundGameObject } from "../background/BackgroundGameObject";
 import { Blackout } from "../blackout";
 import { World } from "../world/World";
+import { PlaygroundGameObject } from "../playground/PlaygroundGameObject";
+import { Tetris } from "../tetris/Tetris";
 
 export class RootGameObject extends GameObjectNode {
   static WIDTH = 600;
@@ -16,6 +18,9 @@ export class RootGameObject extends GameObjectNode {
       height: RootGameObject.HEIGHT,
     });
 
+    this.backgroundGameObject = null;
+    this.playgroundGameObject = null;
+
     this.loadingGameObject = new LoadingGameObject(
       this.size.width,
       this.size.height
@@ -27,8 +32,6 @@ export class RootGameObject extends GameObjectNode {
       defaultState: BlackoutGameObject.STATES.DARK,
     });
 
-    this.backgroundGameObject = null;
-
     this.loadingGameObject.events.subscribeOnce(
       GameObjectNode.EVENTS.BEFORE_DESTROYING,
       () => {
@@ -37,7 +40,9 @@ export class RootGameObject extends GameObjectNode {
           this.size.width,
           this.size.height
         );
-        this.connect(this.backgroundGameObject);
+        Tetris.makePlayground();
+        this.playgroundGameObject = new PlaygroundGameObject();
+        this.connect([this.backgroundGameObject, this.playgroundGameObject]);
         World.toGame();
         Blackout.light();
       }
@@ -54,6 +59,14 @@ export class RootGameObject extends GameObjectNode {
 
     if (this.backgroundGameObject) {
       this.backgroundGameObject.drawTo(this.ctx);
+    }
+
+    if (this.playgroundGameObject) {
+      this.playgroundGameObject.drawTo(
+        this.ctx,
+        (RootGameObject.WIDTH - this.playgroundGameObject.size.width) / 2,
+        (RootGameObject.HEIGHT - this.playgroundGameObject.size.height) / 2
+      );
     }
 
     this.blackoutGameObject.drawTo(this.ctx);

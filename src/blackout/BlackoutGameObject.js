@@ -48,24 +48,26 @@ export class BlackoutGameObject extends GameObjectNode {
 
     Game.stream.child(this.stream);
 
-    Blackout.events.subscribe(Blackout.EVENTS.LIGHT, () => {
-      if (!this.stream.isActive) {
-        this.stream.continue();
-        this.markForUpdate(BlackoutGameObject.MARKS.MARK);
-      }
-      this.show();
-      this.destination = 0;
-    });
+    this.destroyingJobs.add([
+      Blackout.events.subscribe(Blackout.EVENTS.LIGHT, () => {
+        if (!this.stream.isActive) {
+          this.stream.continue();
+          this.markForUpdate(BlackoutGameObject.MARKS.MARK);
+        }
+        this.show();
+        this.destination = 0;
+      }),
+      Blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
+        if (!this.stream.isActive) {
+          this.stream.continue();
+          this.markForUpdate(BlackoutGameObject.MARKS.MARK);
+        }
 
-    Blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
-      if (!this.stream.isActive) {
-        this.stream.continue();
-        this.markForUpdate(BlackoutGameObject.MARKS.MARK);
-      }
-
-      this.show();
-      this.destination = 1;
-    });
+        this.show();
+        this.destination = 1;
+      }),
+      () => this.stream.destroy(),
+    ]);
   }
 
   draw() {

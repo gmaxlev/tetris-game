@@ -13,5 +13,3 @@ export const Blackout = {
     this.events.emit(Blackout.EVENTS.DARK);
   },
 };
-
-console.log(Blackout);

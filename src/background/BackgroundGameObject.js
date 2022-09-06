@@ -44,14 +44,14 @@ export class BackgroundGameObject extends GameObjectNode {
         image: Tetris.resourcesMap.m1.get(),
       },
     ];
-
-    World.events.subscribe(World.EVENTS.START_TRANSITION_TO_GAME, () => {
-      this.markForUpdate(BackgroundGameObject.MARKS.MARK);
-    });
-
-    World.events.subscribe(World.EVENTS.END_TRANSITION_TO_GAME, () => {
-      this.unmarkForUpdate(BackgroundGameObject.MARKS.MARK);
-    });
+    this.destroyingJobs.add([
+      World.events.subscribe(World.EVENTS.START_TRANSITION_TO_GAME, () => {
+        this.markForUpdate(BackgroundGameObject.MARKS.MARK);
+      }),
+      World.events.subscribe(World.EVENTS.END_TRANSITION_TO_GAME, () => {
+        this.unmarkForUpdate(BackgroundGameObject.MARKS.MARK);
+      }),
+    ]);
   }
 
   draw() {

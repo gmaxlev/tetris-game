@@ -1,10 +1,21 @@
-import { Resources, Resource, Stream, EventEmitter } from "tiny-game-engine";
+import {
+  Resources,
+  Resource,
+  Stream,
+  EventEmitter,
+  KeyboardListener,
+} from "tiny-game-engine";
 import { Menu } from "../menu/Menu";
+import { Playground } from "../playground/Playground";
 
-export const Tetris = new (class TetrisGame {
+export const Tetris = new (class Tetris {
   constructor() {
     this.stream = new Stream();
     this.events = new EventEmitter();
+
+    this.keyboardListener = new KeyboardListener();
+    this.stream.child(this.keyboardListener.stream);
+    this.keyboardListener.run();
 
     this.resourcesMap = {
       m1: new Resource("public/resources/m1.png"),
@@ -14,6 +25,7 @@ export const Tetris = new (class TetrisGame {
       m5: new Resource("public/resources/m5.png"),
       m6: new Resource("public/resources/m6.png"),
       sun: new Resource("public/resources/sun.png"),
+      playground: new Resource("public/resources/playground.png"),
     };
 
     this.resources = new Resources();
@@ -21,9 +33,16 @@ export const Tetris = new (class TetrisGame {
 
     /** @type {Menu} */
     this.menu = null;
+
+    /** @type {Playground} */
+    this.playground = null;
   }
 
   makeMenu() {
     this.menu = new Menu();
+  }
+
+  makePlayground() {
+    this.playground = new Playground(this);
   }
 })();
