@@ -13,3 +13,5 @@ export const Blackout = {
     this.events.emit(Blackout.EVENTS.DARK);
   },
 };
+
+window.b = Blackout;

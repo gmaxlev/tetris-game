@@ -19,6 +19,7 @@ export class KeyMoveController {
 
     this.stream = new Stream({
       fn: () => this.update(),
+      name: "KeyMoveController",
     });
   }
 

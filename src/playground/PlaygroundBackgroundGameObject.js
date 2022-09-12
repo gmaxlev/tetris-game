@@ -1,13 +1,11 @@
-import { GameObjectNode, Stream, Game } from "tiny-game-engine";
+import { GameObjectCanvas, Stream, Game } from "tiny-game-engine";
 import { Tetris } from "../tetris/Tetris";
 
-export class PlaygroundBackgroundGameObject extends GameObjectNode {
-  static MARKS = {
-    MARK: Symbol("MARK"),
-  };
-
+export class PlaygroundBackgroundGameObject extends GameObjectCanvas {
   constructor() {
-    super({ width: 280, height: 560 });
+    super({ width: 320, height: 600 });
+
+    this.bgImage = Tetris.resources.get("playground");
 
     this.map = Array.from(new Array(Tetris.playground.gameMap.rows - 1))
       .map(() => Array.from(new Array(Tetris.playground.gameMap.cols - 1)))
@@ -21,25 +19,31 @@ export class PlaygroundBackgroundGameObject extends GameObjectNode {
     this.progress = 0;
     this.time = 5000;
 
-    this.stream = Tetris.playground.stream.child(
-      new Stream({
-        fn: () => {
-          this.progress = Math.min(this.time, this.progress + Game.dt);
-          if (this.progress === this.time) {
-            this.stream.stop();
-            this.unmarkForUpdate(PlaygroundBackgroundGameObject.MARKS.MARK);
-          }
-        },
-      })
-    );
+    this.stream = new Stream({
+      fn: () => {
+        this.progress = Math.min(this.time, this.progress + Game.dt);
+        if (this.progress === this.time) {
+          this.stream.stop();
+          this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
+        }
+      },
+      name: "PlaygroundBackgroundGameObject",
+    });
 
-    this.markForUpdate(PlaygroundBackgroundGameObject.MARKS.MARK);
+    Tetris.playground.stream.child(this.stream);
+
+    this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
   }
 
-  draw() {
+  render() {
+    this.ctx.drawImage(this.bgImage, 0, 0);
+
     if (this.progress === 0) {
       return;
     }
+
+    this.ctx.save();
+    this.ctx.translate(20, 30);
 
     this.ctx.fillStyle = "#A43CAC";
 
@@ -60,5 +64,12 @@ export class PlaygroundBackgroundGameObject extends GameObjectNode {
         this.ctx.restore();
       });
     });
+
+    this.ctx.restore();
+  }
+
+  destroy() {
+    this.stream.destroy();
+    super.destroy();
   }
 }

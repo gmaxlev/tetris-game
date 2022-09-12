@@ -1,12 +1,8 @@
-import { GameObjectNode, Vector2 } from "tiny-game-engine";
+import { GameObjectCanvas, Vector2, Jobs } from "tiny-game-engine";
 import { Tetris } from "../tetris/Tetris";
 import { World } from "../world/World";
 
-export class BackgroundGameObject extends GameObjectNode {
-  static MARKS = {
-    MARK: Symbol("MARK"),
-  };
-
+export class BackgroundGameObject extends GameObjectCanvas {
   constructor(width, height) {
     super({ width, height });
 
@@ -44,17 +40,20 @@ export class BackgroundGameObject extends GameObjectNode {
         image: Tetris.resourcesMap.m1.get(),
       },
     ];
-    this.destroyingJobs.add([
+
+    this.destroyingJobs = new Jobs();
+
+    this.destroyingJobs.addOnce([
       World.events.subscribe(World.EVENTS.START_TRANSITION_TO_GAME, () => {
-        this.markForUpdate(BackgroundGameObject.MARKS.MARK);
+        this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
       }),
       World.events.subscribe(World.EVENTS.END_TRANSITION_TO_GAME, () => {
-        this.unmarkForUpdate(BackgroundGameObject.MARKS.MARK);
+        this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
       }),
     ]);
   }
 
-  draw() {
+  render() {
     this.ctx.fillStyle = "#AAECDE";
     this.ctx.fillRect(0, 0, this.size.width, this.size.height);
 
@@ -65,5 +64,10 @@ export class BackgroundGameObject extends GameObjectNode {
       const y = (object.position.y - World.camera.y) * object.distance;
       this.ctx.drawImage(object.image, x, y);
     });
+  }
+
+  destroy() {
+    this.destroyingJobs.run();
+    super.destroy();
   }
 }

@@ -1,10 +1,30 @@
-import { getRandomInt, Vector2 } from "tiny-game-engine";
+import {
+  getRandomInt,
+  Vector2,
+  Stream,
+  StreamValue,
+  Game,
+  EventEmitter,
+} from "tiny-game-engine";
 import { Brick } from "./Brick";
 import { tetrominos } from "./tetromino";
 
 export class Figure {
+  static COLORS = [
+    "#0087A0",
+    "#F2CC03",
+    "#D22757",
+    "#6333B7",
+    "#2E62AB",
+    "#F98B20",
+    "#019585",
+  ];
+
+  static EVENTS = {
+    DESTROY: Symbol("DESTROY"),
+  };
+
   /**
-   *
    * @param {Playground} playground
    * @param {GameMap} gameMap
    */
@@ -12,7 +32,11 @@ export class Figure {
     this.playground = playground;
     this.gameMap = gameMap;
 
+    this.events = new EventEmitter();
+
     this.tetrominos = tetrominos[getRandomInt(0, tetrominos.length - 1)];
+
+    this.color = Figure.COLORS[getRandomInt(0, Figure.COLORS.length - 1)];
 
     this.activeTetrominoIndex = getRandomInt(0, this.tetrominos.length - 1);
     this.activeTetromino = this.tetrominos[this.activeTetrominoIndex];
@@ -29,9 +53,23 @@ export class Figure {
       this.position.y
     ).forEach(([pX, pY]) => {
       this.bricks.push(
-        new Brick(this, playground, this.gameMap.getMapCell(pX, pY))
+        new Brick(this, playground, this.gameMap.getMapCell(pX, pY), this.color)
       );
     });
+
+    this.isFalling = false;
+
+    this.stream = new Stream({
+      name: "Figure",
+    });
+  }
+
+  /**
+   * Returns true if the figure cannot be moved
+   * @returns {boolean}
+   */
+  isBlockMoving() {
+    return this.isFalling;
   }
 
   createTetrominoPositions(tetrimino, x, y) {
@@ -64,20 +102,44 @@ export class Figure {
   }
 
   fall() {
+    if (this.isBlockMoving()) {
+      return;
+    }
+
     const { x, y } = this.getFinishPosition();
     if (y !== this.position.y) {
-      this.createTetrominoPositions(this.activeTetromino, x, y).forEach(
-        ([xP, yP], brickIndex) => {
-          this.bricks[brickIndex].fall(xP, yP);
-        }
+      this.isFalling = true;
+      const positions = this.createTetrominoPositions(
+        this.activeTetromino,
+        x,
+        y
       );
+
+      const fallingStream = new StreamValue({
+        fn: (value) => {
+          this.bricks.forEach((brick, index) => {
+            brick.fall(
+              this.gameMap.getMapCell(positions[index][0], positions[index][1]),
+              Math.min(100, value) / 100
+            );
+          });
+
+          if (value >= 100) {
+            this.changePosition(x, y);
+            this.isFalling = false;
+            fallingStream.destroy();
+            return;
+          }
+          return value + Game.dt;
+        },
+        initialValue: 0,
+        name: "Falling Figure",
+      });
+
+      this.stream.child(fallingStream);
     }
   }
 
-  /**
-   *
-   * @returns {{x: number, y: number}}
-   */
   getFinishPosition() {
     let yPosition = null;
     for (let y = this.position.y; yPosition === null; y++) {
@@ -98,6 +160,9 @@ export class Figure {
   }
 
   rotateRight() {
+    if (this.isBlockMoving()) {
+      return;
+    }
     if (!this.activeTetromino.tests) {
       return;
     }
@@ -111,6 +176,9 @@ export class Figure {
   }
 
   rotateLeft() {
+    if (this.isBlockMoving()) {
+      return;
+    }
     if (!this.activeTetromino.tests) {
       return;
     }
@@ -184,6 +252,9 @@ export class Figure {
   }
 
   tryMoveRight() {
+    if (this.isBlockMoving()) {
+      return;
+    }
     for (let i = 0; i < this.bricks.length; i++) {
       if (!this.bricks[i].gameMapCell.checkRightForFree()) {
         return;
@@ -194,6 +265,9 @@ export class Figure {
   }
 
   tryMoveLeft() {
+    if (this.isBlockMoving()) {
+      return;
+    }
     for (let i = 0; i < this.bricks.length; i++) {
       if (!this.bricks[i].gameMapCell.checkLeftForFree()) {
         return;
@@ -204,6 +278,9 @@ export class Figure {
   }
 
   tryMoveBottom() {
+    if (this.isBlockMoving()) {
+      return;
+    }
     for (let i = 0; i < this.bricks.length; i++) {
       if (!this.bricks[i].gameMapCell.checkBottomForFree()) {
         return;
@@ -227,6 +304,9 @@ export class Figure {
   }
 
   destroy() {
+    this.stream.destroy();
     this.bricks.forEach((brick) => brick.removeFromFigure());
+    this.events.emit(Figure.EVENTS.DESTROY);
+    this.events.clear();
   }
 }

@@ -1,16 +1,12 @@
-import { GameObjectNode, Stream, Game } from "tiny-game-engine";
+import { GameObjectPure, Stream, Game } from "tiny-game-engine";
 import { Blackout } from "./index";
 
 const SPEED = 0.5;
 
-export class BlackoutGameObject extends GameObjectNode {
+export class BlackoutGameObject extends GameObjectPure {
   static STATES = {
     DARK: 1,
     LIGHT: 0,
-  };
-
-  static MARKS = {
-    MARK: Symbol("MARK"),
   };
 
   constructor({
@@ -38,40 +34,48 @@ export class BlackoutGameObject extends GameObjectNode {
           this.state = Math.max(0, this.state - progress);
         } else {
           this.stream.stop();
-          this.unmarkForUpdate(BlackoutGameObject.MARKS.MARK);
           if (this.state === 0) {
-            this.hide();
+            this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);
           }
         }
       },
+      name: "BlackoutGameObject",
     });
 
     Game.stream.child(this.stream);
 
-    this.destroyingJobs.add([
+    this.unsubscribes = [
       Blackout.events.subscribe(Blackout.EVENTS.LIGHT, () => {
-        if (!this.stream.isActive) {
-          this.stream.continue();
-          this.markForUpdate(BlackoutGameObject.MARKS.MARK);
-        }
-        this.show();
+        this.stream.continue();
+        this.markForUpdate(GameObjectPure.MARKS.SINGLE);
         this.destination = 0;
       }),
       Blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
-        if (!this.stream.isActive) {
-          this.stream.continue();
-          this.markForUpdate(BlackoutGameObject.MARKS.MARK);
-        }
-
-        this.show();
+        this.stream.continue();
+        this.markForUpdate(GameObjectPure.MARKS.SINGLE);
         this.destination = 1;
       }),
-      () => this.stream.destroy(),
-    ]);
+    ];
+
+    if (this.state === 1) {
+      this.markForUpdate(GameObjectPure.MARKS.SINGLE);
+    }
   }
 
-  draw() {
-    this.ctx.fillStyle = `rgba(0,0,0, ${this.state})`;
-    this.ctx.fillRect(0, 0, this.size.width, this.size.height);
+  render(ctx) {
+    if (this.state === 0) {
+      return;
+    }
+
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0, ${this.state})`;
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.restore();
+  }
+
+  destroy() {
+    this.stream.destroy();
+    this.unsubscribes.forEach((fn) => fn());
+    super.destroy();
   }
 }

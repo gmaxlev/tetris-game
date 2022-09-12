@@ -2,7 +2,6 @@ import { Stream, StreamDelay, EventEmitter, Game } from "tiny-game-engine";
 import { GameMap } from "./GameMap";
 import { Figure } from "./Figure";
 import { KeyMoveController } from "./KeyMoveController";
-// import { Brick } from "../brick/Brick";
 
 export class Playground {
   static EVENTS = {
@@ -16,11 +15,9 @@ export class Playground {
   constructor(tetris) {
     this.events = new EventEmitter();
     this.tetris = tetris;
-    this.brickSize = 28;
-    this.isRun = false;
     this.gameMap = new GameMap(this, 20, 10);
 
-    window.map = this.gameMap;
+    this.isRun = false;
 
     this.moveIntervalTime = 0;
     this.moveInterval = 1000;
@@ -35,6 +32,7 @@ export class Playground {
     this.stream = this.tetris.stream.child(
       new Stream({
         fn: () => this.update(),
+        name: "Playground Root",
       })
     );
 
@@ -45,6 +43,7 @@ export class Playground {
           this.isRun = true;
         },
         delay: 1000,
+        name: "Playground Delay",
       })
     );
 
@@ -119,55 +118,26 @@ export class Playground {
 
   makeFigure() {
     this.figure = new Figure(this, this.gameMap);
+    this.stream.child(this.figure.stream);
     this.events.emit(Playground.EVENTS.MADE_FIGURE, this.figure);
-
-    this.events.emit(Playground.EVENTS.TEST, [
-      // new Brick(null, this, this.gameMap.getMapCell(0, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(1, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(2, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(3, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(4, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(5, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(6, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(7, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(8, 19)),
-      // new Brick(null, this, this.gameMap.getMapCell(0, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(1, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(2, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(3, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(4, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(5, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(6, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(7, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(8, 18)),
-      // new Brick(null, this, this.gameMap.getMapCell(0, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(1, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(2, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(3, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(4, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(5, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(6, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(7, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(8, 17)),
-      // new Brick(null, this, this.gameMap.getMapCell(0, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(1, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(2, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(3, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(4, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(5, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(6, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(7, 16)),
-      // new Brick(null, this, this.gameMap.getMapCell(8, 17)),
-    ]);
   }
 
   update() {
     if (!this.isRun) {
       return;
     }
+
     if (!this.figure) {
       this.makeFigure();
-    } else if (this.moveIntervalTime >= this.moveInterval) {
+      return;
+    }
+
+    if (this.figure.isBlockMoving()) {
+      this.moveIntervalTime = this.moveInterval;
+      return;
+    }
+
+    if (this.moveIntervalTime >= this.moveInterval) {
       this.moveIntervalTime = 0;
       if (this.figure.isTheEnd()) {
         this.figure.destroy();

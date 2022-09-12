@@ -1,6 +1,5 @@
 export class GameMapCell {
   /**
-   *
    * @param {GameMap} gameMap
    * @param {number} row
    * @param {number} col
@@ -26,19 +25,36 @@ export class GameMapCell {
     this.brick = null;
   }
 
+  collision() {
+    if (this.top && this.top.brick) {
+      this.top.brick.collision();
+    }
+
+    if (this.bottom && this.bottom.brick) {
+      this.bottom.brick.collision();
+    }
+
+    if (this.left && this.left.brick) {
+      this.left.brick.collision();
+    }
+
+    if (this.right && this.right.brick) {
+      this.right.brick.collision();
+    }
+  }
+
   /**
    * Sets a brick into this cell
    * @param {Brick} brick
    */
   setBrick(brick) {
     this.brick = brick;
+    this.collision();
   }
 
-  /**
-   * Removes a brick
-   */
   removeBrick() {
     this.brick = null;
+    this.collision();
   }
 
   checkTopForFree() {

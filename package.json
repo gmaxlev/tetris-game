@@ -33,6 +33,6 @@
   },
   "dependencies": {
     "core-js": "^3.22.5",
-    "tiny-game-engine": "github:gmaxlev/tiny-game-engine"
+    "tiny-game-engine": "file:../tiny-game-engine/"
   }
 }

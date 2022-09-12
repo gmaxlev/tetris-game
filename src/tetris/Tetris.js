@@ -10,7 +10,9 @@ import { Playground } from "../playground/Playground";
 
 export const Tetris = new (class Tetris {
   constructor() {
-    this.stream = new Stream();
+    this.stream = new Stream({
+      name: "Tetris",
+    });
     this.events = new EventEmitter();
 
     this.keyboardListener = new KeyboardListener();
@@ -43,6 +45,9 @@ export const Tetris = new (class Tetris {
   }
 
   makePlayground() {
+    if (this.menu) {
+      this.menu.destroy();
+    }
     this.playground = new Playground(this);
   }
 })();
