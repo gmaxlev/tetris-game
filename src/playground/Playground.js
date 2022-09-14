@@ -39,8 +39,9 @@ export class Playground {
     // Add a little delay before starting game :)
     this.stream.child(
       new StreamDelay({
-        fn: () => {
+        fn: (stream) => {
           this.isRun = true;
+          stream.destroy();
         },
         delay: 1000,
         name: "Playground Delay",
@@ -117,6 +118,10 @@ export class Playground {
   }
 
   makeFigure() {
+    if (this.figure) {
+      this.figure.destroy();
+      this.figure = null;
+    }
     this.figure = new Figure(this, this.gameMap);
     this.stream.child(this.figure.stream);
     this.events.emit(Playground.EVENTS.MADE_FIGURE, this.figure);
@@ -140,8 +145,6 @@ export class Playground {
     if (this.moveIntervalTime >= this.moveInterval) {
       this.moveIntervalTime = 0;
       if (this.figure.isTheEnd()) {
-        this.figure.destroy();
-        this.figure = null;
         this.makeFigure();
       } else {
         this.figure.tryMoveBottom();

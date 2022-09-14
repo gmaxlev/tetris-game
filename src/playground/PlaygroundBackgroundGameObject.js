@@ -43,7 +43,7 @@ export class PlaygroundBackgroundGameObject extends GameObjectCanvas {
     }
 
     this.ctx.save();
-    this.ctx.translate(20, 30);
+    this.ctx.translate(20, 20);
 
     this.ctx.fillStyle = "#A43CAC";
 

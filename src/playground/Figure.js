@@ -5,23 +5,29 @@ import {
   StreamValue,
   Game,
   EventEmitter,
+  Color,
 } from "tiny-game-engine";
 import { Brick } from "./Brick";
 import { tetrominos } from "./tetromino";
 
 export class Figure {
+  static FALLING_SPEED = 100;
+
   static COLORS = [
-    "#0087A0",
-    "#F2CC03",
-    "#D22757",
-    "#6333B7",
-    "#2E62AB",
-    "#F98B20",
-    "#019585",
+    new Color(0, 135, 160, 100),
+    new Color(242, 204, 3, 100),
+    new Color(210, 39, 87, 100),
+    new Color(99, 51, 183, 100),
+    new Color(46, 98, 171, 100),
+    new Color(249, 139, 31, 100),
+    new Color(1, 149, 133, 100),
   ];
 
   static EVENTS = {
     DESTROY: Symbol("DESTROY"),
+    MOVE: Symbol("MOVE"),
+    FALLING_START: Symbol("FALLING"),
+    FALLING_STOP: Symbol("FALLING"),
   };
 
   /**
@@ -39,6 +45,11 @@ export class Figure {
     this.color = Figure.COLORS[getRandomInt(0, Figure.COLORS.length - 1)];
 
     this.activeTetrominoIndex = getRandomInt(0, this.tetrominos.length - 1);
+
+    /**
+     *
+     * @type {Tetromino}
+     */
     this.activeTetromino = this.tetrominos[this.activeTetrominoIndex];
 
     const { x, y } = this.genInitialPosition();
@@ -57,7 +68,20 @@ export class Figure {
       );
     });
 
-    this.isFalling = false;
+    this.finish = {
+      position: new Vector2(0, 0),
+      bricksPosition: [],
+    };
+
+    this.falling = {
+      isActive: false,
+      progress: 0,
+      from: {
+        row: 0,
+      },
+    };
+
+    this.updateFinish();
 
     this.stream = new Stream({
       name: "Figure",
@@ -69,7 +93,7 @@ export class Figure {
    * @returns {boolean}
    */
   isBlockMoving() {
-    return this.isFalling;
+    return this.falling.isActive;
   }
 
   createTetrominoPositions(tetrimino, x, y) {
@@ -99,6 +123,26 @@ export class Figure {
   changePosition(x, y) {
     this.position.x = x;
     this.position.y = y;
+    this.updateFinish();
+    this.events.emit(Figure.EVENTS.MOVE);
+  }
+
+  updateFinish() {
+    const { x, y } = this.getFinishPosition();
+    this.finish.position.x = x;
+    this.finish.position.y = y;
+    this.finish.bricksPosition = this.createTetrominoPositions(
+      this.activeTetromino,
+      x,
+      y
+    );
+  }
+
+  getTopBricks() {
+    return this.bricks.filter(
+      (brick) =>
+        brick.gameMapCell.top === null || brick.gameMapCell.top.brick === null
+    );
   }
 
   fall() {
@@ -106,28 +150,35 @@ export class Figure {
       return;
     }
 
-    const { x, y } = this.getFinishPosition();
-    if (y !== this.position.y) {
-      this.isFalling = true;
-      const positions = this.createTetrominoPositions(
-        this.activeTetromino,
-        x,
-        y
-      );
-
+    const { x, y } = this.finish.position;
+    if (this.finish.position.y !== this.position.y) {
       const fallingStream = new StreamValue({
         fn: (value) => {
-          this.bricks.forEach((brick, index) => {
-            brick.fall(
-              this.gameMap.getMapCell(positions[index][0], positions[index][1]),
-              Math.min(100, value) / 100
-            );
-          });
+          const progress = Math.min(1, value / Figure.FALLING_SPEED);
 
-          if (value >= 100) {
+          this.falling.progress = progress;
+
+          if (progress === 0) {
+            this.falling.from.row =
+              this.position.y + this.activeTetromino.freeSpaces.top;
+            this.falling.isActive = true;
+            this.bricks.forEach((brick, index) => {
+              brick.fall(
+                this.gameMap.getMapCell(
+                  this.finish.bricksPosition[index][0],
+                  this.finish.bricksPosition[index][1]
+                )
+              );
+            });
+            this.events.emit(Figure.EVENTS.FALLING_START);
+          }
+
+          if (progress === 1) {
+            this.replaceTetromino(this.activeTetrominoIndex, x, y);
             this.changePosition(x, y);
-            this.isFalling = false;
+            this.falling.isActive = false;
             fallingStream.destroy();
+            this.events.emit(Figure.EVENTS.FALLING_STOP);
             return;
           }
           return value + Game.dt;
@@ -173,6 +224,10 @@ export class Figure {
         : this.activeTetrominoIndex + 1;
 
     this.tryChangeTetromino(nextIndex);
+
+    this.updateFinish();
+
+    this.events.emit(Figure.EVENTS.MOVE);
   }
 
   rotateLeft() {
@@ -189,6 +244,10 @@ export class Figure {
         : this.activeTetrominoIndex - 1;
 
     this.tryChangeTetromino(nextIndex);
+
+    this.updateFinish();
+
+    this.events.emit(Figure.EVENTS.MOVE);
   }
 
   checkTetrominoForFreePlace(tetromino, x, y) {

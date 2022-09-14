@@ -14,8 +14,6 @@ document.body.style.alignItems = "center";
 document.body.style.justifyContent = "center";
 document.body.style.backgroundColor = "black";
 
-console.log(Game.stream);
-
 const game = new Game({
   canvas: rootGameObject.canvas,
   update() {

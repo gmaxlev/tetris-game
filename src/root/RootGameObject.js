@@ -70,11 +70,8 @@ export class RootGameObject extends GameObjectCanvas {
     }
 
     if (this.playgroundGameObject) {
-      this.draw(
-        this.playgroundGameObject,
-        (RootGameObject.WIDTH - this.playgroundGameObject.size.width) / 2,
-        (RootGameObject.HEIGHT - this.playgroundGameObject.size.height) / 2
-      );
+      const { x, y } = this.playgroundGameObject.getPosition();
+      this.draw(this.playgroundGameObject, x, y);
     }
 
     if (this.blackoutGameObject) {

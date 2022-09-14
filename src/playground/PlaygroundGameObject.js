@@ -3,6 +3,10 @@ import { Tetris } from "../tetris/Tetris";
 import { PlaygroundBackgroundGameObject } from "./PlaygroundBackgroundGameObject";
 import { Playground } from "./Playground";
 import { BrickGameObject } from "./BrickGameObject";
+import { RootGameObject } from "../root/RootGameObject";
+import { FinishGameObject } from "./FinishGameObject";
+import { Figure } from "./Figure";
+import { FallingAnimationGameObject } from "./FallingAnimationGameObject";
 
 export class PlaygroundGameObject extends GameObjectCanvas {
   constructor() {
@@ -13,8 +17,13 @@ export class PlaygroundGameObject extends GameObjectCanvas {
     this.playgroundBackgroundGameObject = new PlaygroundBackgroundGameObject();
     this.playgroundBackgroundGameObject.subscribe(this);
 
+    this.fallingAnimationGameObject = new FallingAnimationGameObject();
+    this.fallingAnimationGameObject.subscribe(this);
+
     /** @type {Array<BrickGameObject>} */
     this.bricks = [];
+
+    this.finishGameObject = null;
 
     this.destroyingJobs.addOnce([
       Tetris.playground.events.subscribe(
@@ -26,6 +35,13 @@ export class PlaygroundGameObject extends GameObjectCanvas {
             this.bricks.push(brickGameObject);
             brickGameObject.subscribe(this);
           });
+          this.finishGameObject = new FinishGameObject(figure);
+          this.finishGameObject.subscribe(this);
+          this.fallingAnimationGameObject.listenFigure(figure);
+          figure.events.subscribeOnce(Figure.EVENTS.DESTROY, () => {
+            this.finishGameObject.destroy();
+            this.finishGameObject = null;
+          });
         }
       ),
     ]);
@@ -34,10 +50,24 @@ export class PlaygroundGameObject extends GameObjectCanvas {
   render() {
     this.draw(this.playgroundBackgroundGameObject, 0, 0);
 
+    if (this.finishGameObject) {
+      const { x, y } = this.finishGameObject.getPosition();
+      this.draw(this.finishGameObject, x, y);
+    }
+
     this.bricks.forEach((brickGameObject) => {
       const { x, y } = brickGameObject.getPosition();
       this.draw(brickGameObject, 20 + x, 20 + y);
     });
+
+    this.draw(this.fallingAnimationGameObject);
+  }
+
+  getPosition() {
+    return {
+      x: (RootGameObject.WIDTH - this.size.width) / 2,
+      y: (RootGameObject.HEIGHT - this.size.height) / 2,
+    };
   }
 
   destroy() {

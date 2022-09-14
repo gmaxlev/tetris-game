@@ -29,6 +29,12 @@ export class GameMap {
     );
   }
 
+  /**
+   *
+   * @param x
+   * @param y
+   * @returns {GameMapCell}
+   */
   getMapCell(x, y) {
     return this.map[y][x];
   }
