@@ -1,9 +1,17 @@
-import { GameObjectCanvas, Jobs, StreamValue, Game } from "tiny-game-engine";
+import {
+  GameObjectCanvas,
+  Jobs,
+  StreamValue,
+  Game,
+  Color,
+} from "tiny-game-engine";
 import { Brick } from "./Brick";
 import { Tetris } from "../tetris/Tetris";
 import { Figure } from "./Figure";
 
 export const BRICK_SIZE = 28;
+export const BRICK_LIGHT_HEIGHT = 3;
+export const BRICK_DARKEN_HEIGHT = 5;
 
 /**
  *
@@ -35,12 +43,17 @@ export class BrickGameObject extends GameObjectCanvas {
    * @param {Brick} brick
    */
   constructor(brick) {
-    super({ width: BRICK_SIZE, height: BRICK_SIZE + 5 });
+    super({
+      width: BRICK_SIZE,
+      height: BRICK_SIZE + BRICK_LIGHT_HEIGHT + BRICK_DARKEN_HEIGHT,
+    });
     this.brick = brick;
 
     this.destroyingJobs = new Jobs();
 
     this.opacity = 0;
+
+    this.lighten = new Color(this.brick.color).lighten(0.4);
 
     this.destroyingJobs.addOnce([
       this.brick.events.subscribe(Brick.EVENTS.MOVE, () => {
@@ -78,32 +91,49 @@ export class BrickGameObject extends GameObjectCanvas {
 
   getPosition() {
     if (this.brick.figure && this.brick.figure.falling.isActive) {
-      return getFallingPosition(
+      const { x, y } = getFallingPosition(
         this.brick.gameMapCell,
         this.brick.falling,
         this.brick.figure.falling.progress
       );
+      return {
+        x,
+        y: y - BRICK_LIGHT_HEIGHT,
+      };
     }
 
     return {
       x: Math.floor(this.brick.gameMapCell.col * BRICK_SIZE),
-      y: Math.floor(this.brick.gameMapCell.row * BRICK_SIZE),
+      y:
+        Math.floor(this.brick.gameMapCell.row * BRICK_SIZE) -
+        BRICK_LIGHT_HEIGHT,
     };
   }
 
   render() {
     this.ctx.save();
     this.ctx.globalAlpha = this.opacity;
+
+    if (!this.brick.gameMapCell.top || !this.brick.gameMapCell.top.brick) {
+      this.ctx.fillStyle = this.lighten;
+      this.ctx.fillRect(0, 0, BRICK_SIZE, BRICK_LIGHT_HEIGHT);
+    }
+
     if (
       !this.brick.gameMapCell.bottom ||
       !this.brick.gameMapCell.bottom.brick
     ) {
       this.ctx.fillStyle = "rgba(0,0,0,0.3)";
-      this.ctx.fillRect(0, BRICK_SIZE, BRICK_SIZE, 5);
+      this.ctx.fillRect(
+        0,
+        BRICK_SIZE + BRICK_LIGHT_HEIGHT,
+        BRICK_SIZE,
+        BRICK_DARKEN_HEIGHT
+      );
     }
 
     this.ctx.fillStyle = this.brick.color;
-    this.ctx.fillRect(0, 0, BRICK_SIZE, BRICK_SIZE);
+    this.ctx.fillRect(0, BRICK_LIGHT_HEIGHT, BRICK_SIZE, BRICK_SIZE);
     this.ctx.restore();
   }
 

@@ -8,14 +8,19 @@ import {
 } from "tiny-game-engine";
 import { Figure } from "./Figure";
 import { Tetris } from "../tetris/Tetris";
-import { BRICK_SIZE, getFallingPosition } from "./BrickGameObject";
+import {
+  BRICK_LIGHT_HEIGHT,
+  BRICK_SIZE,
+  getFallingPosition,
+} from "./BrickGameObject";
+import { Playground } from "./Playground";
 
 export class FallingAnimationGameObject extends GameObjectPure {
   static DISAPPEAR_GRADIENT_TIME = 400;
 
   static DOTS_ANIMATION_TIME_FROM = 1000;
 
-  static DOTS_ANIMATION_TIME_TO = 4000;
+  static DOTS_ANIMATION_TIME_TO = 2000;
 
   constructor() {
     super();
@@ -27,6 +32,15 @@ export class FallingAnimationGameObject extends GameObjectPure {
       start: false,
     });
 
+    Tetris.playground.events.subscribe(
+      Playground.EVENTS.MADE_FIGURE,
+      (figure) => {
+        figure.events.subscribeOnce(Figure.EVENTS.FALLING_START, () => {
+          this.addAnimation(figure);
+        });
+      }
+    );
+
     Tetris.playground.stream.child(this.stream);
   }
 
@@ -35,64 +49,62 @@ export class FallingAnimationGameObject extends GameObjectPure {
    * Adds the animation when the event is emitted
    * @param {Figure} figure
    */
-  listenFigure(figure) {
-    figure.events.subscribe(Figure.EVENTS.FALLING_START, () => {
-      const yStartingPosition = figure.falling.from.row * BRICK_SIZE + 20;
-      const yFinishPosition = figure.finish.position.y * BRICK_SIZE;
+  addAnimation(figure) {
+    const yStartingPosition = figure.falling.from.row * BRICK_SIZE + 20;
+    const yFinishPosition = figure.finish.position.y * BRICK_SIZE;
 
-      const bricks = figure.getTopBricks().map((brick) => ({
-        brick,
-        // Save the starting positions separately
-        // because it can be changed during animation
-        xStartingPosition: brick.gameMapCell.col * BRICK_SIZE + 20,
-        fallingHeight: 0,
-      }));
+    const bricks = figure.getTopBricks().map((brick) => ({
+      brick,
+      // Save the starting positions separately
+      // because it can be changed during animation
+      xStartingPosition: brick.gameMapCell.col * BRICK_SIZE + 20,
+      fallingHeight: 0,
+    }));
 
-      // Random generating of moving dots
-      const dots = [];
-      bricks.forEach((brick) => {
-        for (let y = yStartingPosition; y <= yFinishPosition; y += BRICK_SIZE) {
-          if (Math.random() > 0.8) {
-            const size = getRandomInt(4, 8);
-            const angleMoving = getRandomInt(70, 110) * PI_OVER_180;
-            dots.push({
-              x:
-                brick.brick.gameMapCell.col * BRICK_SIZE +
-                BRICK_SIZE / 2 -
-                size / 2 +
-                20 +
-                getRandomInt(-size, size),
-              y: y + BRICK_SIZE / 2 - size / 2 + getRandomInt(-size, size),
-              color: Figure.COLORS[getRandomInt(0, Figure.COLORS.length - 1)],
-              time: getRandomInt(
-                FallingAnimationGameObject.DOTS_ANIMATION_TIME_FROM,
-                FallingAnimationGameObject.DOTS_ANIMATION_TIME_TO
-              ),
-              progress: 0,
-              speed: (figure.finish.position.y - figure.falling.from.row) * 1.6,
-              sin: Math.sin(angleMoving),
-              cos: Math.cos(angleMoving),
-              size,
-              brick,
-            });
-          }
+    // Random generating of moving dots
+    const dots = [];
+    bricks.forEach((brick) => {
+      for (let y = yStartingPosition; y <= yFinishPosition; y += BRICK_SIZE) {
+        if (Math.random() > 0.8) {
+          const size = getRandomInt(5, 8);
+          const angleMoving = getRandomInt(60, 120) * PI_OVER_180;
+          dots.push({
+            x:
+              brick.brick.gameMapCell.col * BRICK_SIZE +
+              BRICK_SIZE / 2 -
+              size / 2 +
+              20 +
+              getRandomInt(-size, size),
+            y: y + BRICK_SIZE / 2 - size / 2 + getRandomInt(-size, size),
+            color: Figure.COLORS[getRandomInt(0, Figure.COLORS.length - 1)],
+            time: getRandomInt(
+              FallingAnimationGameObject.DOTS_ANIMATION_TIME_FROM,
+              FallingAnimationGameObject.DOTS_ANIMATION_TIME_TO
+            ),
+            progress: 0,
+            speed: (figure.finish.position.y - figure.falling.from.row) * 2,
+            sin: Math.sin(angleMoving),
+            cos: Math.cos(angleMoving),
+            size,
+            brick,
+          });
         }
-      });
-
-      this.animations.push({
-        gradientFadeProgress: 0,
-        gradientColors: {
-          from: new Color(figure.color).setAlpha(0),
-          to: new Color(figure.color),
-        },
-        figure,
-        bricks,
-        yStartingPosition,
-        dots,
-      });
-      this.markForUpdate(figure);
-      this.stream.continue();
+      }
     });
+
+    this.animations.push({
+      gradientFadeProgress: 0,
+      gradientColors: {
+        from: new Color(figure.color).setAlpha(0),
+        to: new Color(figure.color),
+      },
+      figure,
+      bricks,
+      yStartingPosition,
+      dots,
+    });
+    this.markForUpdate(figure);
+    this.stream.continue();
   }
 
   updateAnimations() {
@@ -123,7 +135,7 @@ export class FallingAnimationGameObject extends GameObjectPure {
     });
   }
 
-  render(ctx) {
+  render(ctx, offsetX, offsetY) {
     this.animations.forEach(
       ({
         figure,
@@ -139,10 +151,12 @@ export class FallingAnimationGameObject extends GameObjectPure {
         // to the nearest top bricks
         const gradient = ctx.createLinearGradient(
           0,
-          yStartingPosition,
+          yStartingPosition + offsetY,
           0,
           yStartingPosition +
-            Math.min(...bricks.map((item) => item.fallingHeight))
+            Math.min(...bricks.map((item) => item.fallingHeight)) +
+            offsetY -
+            BRICK_LIGHT_HEIGHT
         );
 
         // The progress of disappearing gradient
@@ -173,8 +187,8 @@ export class FallingAnimationGameObject extends GameObjectPure {
           ctx.fillStyle = gradient;
 
           ctx.fillRect(
-            item.xStartingPosition,
-            yStartingPosition,
+            item.xStartingPosition + offsetX,
+            yStartingPosition + offsetY,
             BRICK_SIZE,
             item.fallingHeight
           );
@@ -188,8 +202,8 @@ export class FallingAnimationGameObject extends GameObjectPure {
             ctx.globalAlpha = 1 - Math.min(1, dot.progress / dot.time);
             const offset = dot.progress * (dot.speed / 1000);
             ctx.fillRect(
-              dot.x - offset * dot.cos,
-              dot.y - offset * dot.sin,
+              dot.x - offset * dot.cos + offsetX,
+              dot.y - offset * dot.sin + offsetY,
               dot.size,
               dot.size
             );

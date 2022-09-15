@@ -6,6 +6,7 @@ import { Blackout } from "../blackout";
 import { World } from "../world/World";
 import { PlaygroundGameObject } from "../playground/PlaygroundGameObject";
 import { Tetris } from "../tetris/Tetris";
+import { FallingAnimationGameObject } from "../playground/FallingAnimationGameObject";
 
 export class RootGameObject extends GameObjectCanvas {
   static WIDTH = 600;
@@ -20,6 +21,7 @@ export class RootGameObject extends GameObjectCanvas {
 
     this.backgroundGameObject = null;
     this.playgroundGameObject = null;
+    this.fallingAnimationGameObject = null;
 
     this.loadingGameObject = new LoadingGameObject(
       this.size.width,
@@ -42,6 +44,9 @@ export class RootGameObject extends GameObjectCanvas {
         Tetris.makePlayground();
         this.playgroundGameObject = new PlaygroundGameObject();
         this.playgroundGameObject.subscribe(this);
+
+        this.fallingAnimationGameObject = new FallingAnimationGameObject();
+        this.fallingAnimationGameObject.subscribe(this);
       }
     );
 
@@ -72,6 +77,7 @@ export class RootGameObject extends GameObjectCanvas {
     if (this.playgroundGameObject) {
       const { x, y } = this.playgroundGameObject.getPosition();
       this.draw(this.playgroundGameObject, x, y);
+      this.draw(this.fallingAnimationGameObject, x, y);
     }
 
     if (this.blackoutGameObject) {

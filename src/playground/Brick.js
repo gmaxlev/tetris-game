@@ -10,7 +10,7 @@ export class Brick {
    * @param {Figure} figure
    * @param {Playground} playground
    * @param {GameMapCell} gameMapCell
-   * @param {string} color
+   * @param {Color} color
    */
   constructor(figure, playground, gameMapCell, color) {
     this.figure = figure;

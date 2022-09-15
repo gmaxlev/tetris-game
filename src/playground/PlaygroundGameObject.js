@@ -6,7 +6,7 @@ import { BrickGameObject } from "./BrickGameObject";
 import { RootGameObject } from "../root/RootGameObject";
 import { FinishGameObject } from "./FinishGameObject";
 import { Figure } from "./Figure";
-import { FallingAnimationGameObject } from "./FallingAnimationGameObject";
+// import { FallingAnimationGameObject } from "./FallingAnimationGameObject";
 
 export class PlaygroundGameObject extends GameObjectCanvas {
   constructor() {
@@ -17,8 +17,8 @@ export class PlaygroundGameObject extends GameObjectCanvas {
     this.playgroundBackgroundGameObject = new PlaygroundBackgroundGameObject();
     this.playgroundBackgroundGameObject.subscribe(this);
 
-    this.fallingAnimationGameObject = new FallingAnimationGameObject();
-    this.fallingAnimationGameObject.subscribe(this);
+    // this.fallingAnimationGameObject = new FallingAnimationGameObject();
+    // this.fallingAnimationGameObject.subscribe(this);
 
     /** @type {Array<BrickGameObject>} */
     this.bricks = [];
@@ -37,7 +37,7 @@ export class PlaygroundGameObject extends GameObjectCanvas {
           });
           this.finishGameObject = new FinishGameObject(figure);
           this.finishGameObject.subscribe(this);
-          this.fallingAnimationGameObject.listenFigure(figure);
+          // this.fallingAnimationGameObject.listenFigure(figure);
           figure.events.subscribeOnce(Figure.EVENTS.DESTROY, () => {
             this.finishGameObject.destroy();
             this.finishGameObject = null;
@@ -60,7 +60,7 @@ export class PlaygroundGameObject extends GameObjectCanvas {
       this.draw(brickGameObject, 20 + x, 20 + y);
     });
 
-    this.draw(this.fallingAnimationGameObject);
+    // this.draw(this.fallingAnimationGameObject);
   }
 
   getPosition() {
