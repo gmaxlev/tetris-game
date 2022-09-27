@@ -3,6 +3,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const ESLintPlugin = require("eslint-webpack-plugin");
+// const BundleAnalyzerPlugin =
+//   require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
 
 module.exports = {
   entry: {
@@ -29,5 +31,6 @@ module.exports = {
       patterns: [{ from: path.resolve(__dirname, "../public"), to: "public" }],
     }),
     new HtmlWebpackPlugin(),
+    // new BundleAnalyzerPlugin(),
   ],
 };

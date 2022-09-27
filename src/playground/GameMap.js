@@ -23,20 +23,46 @@ export class GameMap {
     if (!gameMapCell) {
       return false;
     }
-    return (
-      gameMapCell.brick === null ||
-      (gameMapCell.brick !== null && gameMapCell.brick.figure !== null)
-    );
+    return gameMapCell.brick === null || gameMapCell.brick.figure !== null;
   }
 
   /**
-   *
+   * @returns {number[]}
+   */
+  getFilledLines() {
+    const rows = [];
+
+    rowFor: for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        if (this.map[row][col].brick === null) {
+          continue rowFor;
+        }
+        if (col === this.cols - 1) {
+          rows.push(row);
+        }
+      }
+    }
+
+    return rows;
+  }
+
+  /**
    * @param x
    * @param y
    * @returns {GameMapCell}
    */
   getMapCell(x, y) {
     return this.map[y][x];
+  }
+
+  /**
+   * @param row
+   * @returns {Brick[]}
+   */
+  getBricksInRow(row) {
+    return this.map[row]
+      .map((gameMapCell) => gameMapCell.brick)
+      .filter((brick) => !!brick);
   }
 
   createMap() {

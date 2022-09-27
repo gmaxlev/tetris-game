@@ -8,3 +8,4 @@ import O from "./O";
 
 // export const tetrominos = [O];
 export const tetrominos = [J, L, Z, T, S, I, O];
+// export const tetrominos = [I];

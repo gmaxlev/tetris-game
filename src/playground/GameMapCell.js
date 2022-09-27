@@ -43,10 +43,7 @@ export class GameMapCell {
     }
   }
 
-  /**
-   * Sets a brick into this cell
-   * @param {Brick} brick
-   */
+  /** @param {Brick} brick */
   setBrick(brick) {
     this.brick = brick;
     this.collision();

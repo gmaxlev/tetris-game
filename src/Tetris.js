@@ -5,8 +5,7 @@ import {
   EventEmitter,
   KeyboardListener,
 } from "tiny-game-engine";
-import { Menu } from "../menu/Menu";
-import { Playground } from "../playground/Playground";
+import { Playground } from "./playground/Playground";
 
 export const Tetris = new (class Tetris {
   constructor() {
@@ -33,21 +32,11 @@ export const Tetris = new (class Tetris {
     this.resources = new Resources();
     this.resources.addMap(this.resourcesMap);
 
-    /** @type {Menu} */
-    this.menu = null;
-
     /** @type {Playground} */
     this.playground = null;
   }
 
-  makeMenu() {
-    this.menu = new Menu();
-  }
-
   makePlayground() {
-    if (this.menu) {
-      this.menu.destroy();
-    }
     this.playground = new Playground(this);
   }
 })();

@@ -5,23 +5,14 @@ import {
   StreamValue,
   Game,
   EventEmitter,
-  Color,
+  getRandomElement,
 } from "tiny-game-engine";
 import { Brick } from "./Brick";
-import { tetrominos } from "./tetromino";
+import { tetrominos } from "./tetrominos";
+import { BRICKS_COLORS } from "../constants";
 
 export class Figure {
   static FALLING_SPEED = 100;
-
-  static COLORS = [
-    new Color(0, 135, 160, 100),
-    new Color(242, 204, 3, 100),
-    new Color(210, 39, 87, 100),
-    new Color(99, 51, 183, 100),
-    new Color(46, 98, 171, 100),
-    new Color(249, 139, 31, 100),
-    new Color(1, 149, 133, 100),
-  ];
 
   static EVENTS = {
     DESTROY: Symbol("DESTROY"),
@@ -40,16 +31,13 @@ export class Figure {
 
     this.events = new EventEmitter();
 
-    this.tetrominos = tetrominos[getRandomInt(0, tetrominos.length - 1)];
+    this.tetrominos = getRandomElement(tetrominos);
 
-    this.color = Figure.COLORS[getRandomInt(0, Figure.COLORS.length - 1)];
+    this.color = getRandomElement(BRICKS_COLORS);
 
     this.activeTetrominoIndex = getRandomInt(0, this.tetrominos.length - 1);
 
-    /**
-     *
-     * @type {Tetromino}
-     */
+    /** @type {Tetromino} */
     this.activeTetromino = this.tetrominos[this.activeTetrominoIndex];
 
     const { x, y } = this.genInitialPosition();
@@ -77,7 +65,7 @@ export class Figure {
       isActive: false,
       progress: 0,
       from: {
-        row: 0,
+        y: 0,
       },
     };
 
@@ -151,44 +139,48 @@ export class Figure {
     }
 
     const { x, y } = this.finish.position;
-    if (this.finish.position.y !== this.position.y) {
-      const fallingStream = new StreamValue({
-        fn: (value) => {
+    if (this.finish.position.y === this.position.y) {
+      return;
+    }
+
+    this.falling.isActive = true;
+    this.falling.from.y = this.position.y + this.activeTetromino.freeSpaces.top;
+
+    this.bricks.forEach((brick, index) => {
+      brick.fallStart(
+        this.gameMap.getMapCell(
+          this.finish.bricksPosition[index][0],
+          this.finish.bricksPosition[index][1]
+        )
+      );
+    });
+
+    this.stream.child(
+      new StreamValue({
+        fn: (value, stream) => {
           const progress = Math.min(1, value / Figure.FALLING_SPEED);
 
           this.falling.progress = progress;
 
-          if (progress === 0) {
-            this.falling.from.row =
-              this.position.y + this.activeTetromino.freeSpaces.top;
-            this.falling.isActive = true;
-            this.bricks.forEach((brick, index) => {
-              brick.fall(
-                this.gameMap.getMapCell(
-                  this.finish.bricksPosition[index][0],
-                  this.finish.bricksPosition[index][1]
-                )
-              );
-            });
-            this.events.emit(Figure.EVENTS.FALLING_START);
-          }
-
           if (progress === 1) {
-            this.replaceTetromino(this.activeTetrominoIndex, x, y);
+            this.bricks.forEach((brick) => {
+              brick.fallStop();
+            });
+
             this.changePosition(x, y);
-            this.falling.isActive = false;
-            fallingStream.destroy();
+
             this.events.emit(Figure.EVENTS.FALLING_STOP);
+            stream.destroy();
             return;
           }
           return value + Game.dt;
         },
         initialValue: 0,
         name: "Falling Figure",
-      });
+      })
+    );
 
-      this.stream.child(fallingStream);
-    }
+    this.events.emit(Figure.EVENTS.FALLING_START);
   }
 
   getFinishPosition() {

@@ -1,12 +1,12 @@
 import { Game } from "tiny-game-engine";
-import { Tetris } from "./tetris/Tetris";
-import { RootGameObject } from "./root/RootGameObject";
+import { Tetris } from "./Tetris";
+import { RootGameObject } from "./game-objects/RootGameObject";
 // import { One } from "./test";
 
 const rootGameObject = new RootGameObject();
 
-// rootGameObject.canvas.style.margin = "0 auto";
-// rootGameObject.canvas.style.borderRadius = "10px";
+rootGameObject.canvas.style.margin = "0 auto";
+rootGameObject.canvas.style.borderRadius = "10px";
 document.body.style.margin = "0px";
 document.body.style.height = "100vh";
 document.body.style.display = "flex";

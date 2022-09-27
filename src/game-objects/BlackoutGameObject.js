@@ -1,5 +1,5 @@
 import { GameObjectPure, Stream, Game } from "tiny-game-engine";
-import { Blackout } from "./index";
+import { Blackout } from "../Blackout";
 
 const SPEED = 0.5;
 

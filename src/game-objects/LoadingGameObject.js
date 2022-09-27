@@ -5,7 +5,7 @@ import {
   KeyFrames,
   Bezier,
 } from "tiny-game-engine";
-import { Tetris } from "../tetris/Tetris";
+import { Tetris } from "../Tetris";
 
 const INDICATOR_WIDTH = 400;
 const INDICATOR_HEIGHT = 20;

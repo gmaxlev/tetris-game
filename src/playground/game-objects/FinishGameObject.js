@@ -1,7 +1,14 @@
-import { Game, GameObjectCanvas, Jobs, StreamValue } from "tiny-game-engine";
+import {
+  Game,
+  GameObjectCanvas,
+  Jobs,
+  StreamValue,
+  alpha,
+  toRGBA,
+} from "tiny-game-engine";
 import { BRICK_SIZE } from "./BrickGameObject";
-import { Figure } from "./Figure";
-import { Tetris } from "../tetris/Tetris";
+import { Figure } from "../Figure";
+import { Tetris } from "../../Tetris";
 
 export class FinishGameObject extends GameObjectCanvas {
   static MARKS = {
@@ -55,16 +62,24 @@ export class FinishGameObject extends GameObjectCanvas {
 
   render() {
     this.ctx.save();
-    this.ctx.globalAlpha = 0.4 * this.opacity;
-    this.ctx.fillStyle = "rgba(255,255,255)";
+    this.ctx.globalAlpha = 1 * this.opacity;
+    const padding = 0.5;
     this.figure.activeTetromino.positions.forEach((row, rowIndex) => {
       row.forEach((col, colIndex) => {
         if (col === 1) {
+          const rowPosition =
+            this.figure.finish.position.y +
+            this.figure.activeTetromino.freeSpaces.top +
+            rowIndex;
+          // Opacity depends on row height
+          this.ctx.fillStyle = toRGBA(
+            alpha("rgba(255,255,255)", 1 - 0.5 * (rowPosition / 19))
+          );
           this.ctx.fillRect(
-            BRICK_SIZE * colIndex,
-            BRICK_SIZE * rowIndex,
-            BRICK_SIZE,
-            BRICK_SIZE
+            BRICK_SIZE * colIndex + padding - 1,
+            BRICK_SIZE * rowIndex + padding - 1,
+            BRICK_SIZE - padding * 2,
+            BRICK_SIZE - padding * 2
           );
         }
       });

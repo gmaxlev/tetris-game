@@ -1,13 +1,23 @@
-import { Stream, StreamDelay, EventEmitter, Game } from "tiny-game-engine";
+import {
+  Stream,
+  StreamDelay,
+  EventEmitter,
+  Game,
+  StreamValue,
+} from "tiny-game-engine";
 import { GameMap } from "./GameMap";
 import { Figure } from "./Figure";
 import { KeyMoveController } from "./KeyMoveController";
+import { RotationAnimationGameObject } from "./game-objects/animations/RotationAnimationGameObject";
 
 export class Playground {
   static EVENTS = {
     MADE_FIGURE: Symbol("MADE_FIGURE"),
     TEST: Symbol("TEST"),
+    BEFORE_CLEARING_ROWS: Symbol("BEFORE_CLEARING_ROWS"),
   };
+
+  static FALLING_SPEED = 100;
 
   /**
    * @param {Tetris} tetris
@@ -23,10 +33,21 @@ export class Playground {
     this.moveInterval = 1000;
 
     /**
-     * The current tetromino that is being controlled
+     * The current tetrominos that is being controlled
      * @type {Figure|null}
      */
     this.figure = null;
+
+    this.falling = {
+      isActive: false,
+      progress: 0,
+    };
+
+    /**
+     *
+     * @type {Brick[]}
+     */
+    this.bricks = [];
 
     // The main stream of the game
     this.stream = this.tetris.stream.child(
@@ -52,7 +73,11 @@ export class Playground {
       this.tetris,
       "ArrowRight",
       () => {
-        if (this.figure && !this.leftController.isActive) {
+        if (
+          this.figure &&
+          !this.leftController.isActive &&
+          !this.isBlockMoving()
+        ) {
           this.figure.tryMoveRight();
         }
         this.leftController.reset();
@@ -63,7 +88,11 @@ export class Playground {
       this.tetris,
       "ArrowLeft",
       () => {
-        if (this.figure && !this.rightController.isActive) {
+        if (
+          this.figure &&
+          !this.rightController.isActive &&
+          !this.isBlockMoving()
+        ) {
           this.figure.tryMoveLeft();
         }
         this.rightController.reset();
@@ -74,7 +103,7 @@ export class Playground {
       this.tetris,
       "ArrowDown",
       () => {
-        if (this.figure) {
+        if (this.figure && !this.isBlockMoving()) {
           this.figure.tryMoveBottom();
           if (!this.figure.isTheEnd()) {
             this.moveIntervalTime = 0;
@@ -86,7 +115,7 @@ export class Playground {
     this.rotateController = this.tetris.keyboardListener.subscribeKeyDown(
       "ArrowUp",
       () => {
-        if (this.figure) {
+        if (this.figure && !this.isBlockMoving()) {
           this.figure.rotateRight();
         }
       }
@@ -95,7 +124,7 @@ export class Playground {
     this.rotateController = this.tetris.keyboardListener.subscribeKeyDown(
       "KeyZ",
       () => {
-        if (this.figure) {
+        if (this.figure && !this.isBlockMoving()) {
           this.figure.rotateLeft();
         }
       }
@@ -104,7 +133,7 @@ export class Playground {
     this.spaceController = this.tetris.keyboardListener.subscribeKeyDown(
       "Space",
       () => {
-        if (this.figure) {
+        if (this.figure && !this.isBlockMoving()) {
           this.figure.fall();
         }
       }
@@ -117,14 +146,100 @@ export class Playground {
     ]);
   }
 
+  isBlockMoving() {
+    return this.falling.isActive;
+  }
+
   makeFigure() {
     if (this.figure) {
       this.figure.destroy();
       this.figure = null;
     }
     this.figure = new Figure(this, this.gameMap);
+    this.bricks = this.bricks.concat(this.figure.getAllBricks());
     this.stream.child(this.figure.stream);
+
+    this.figure.events.subscribeOnce(Figure.EVENTS.FALLING_STOP, () => {
+      const filledRows = this.gameMap.getFilledLines();
+      if (filledRows.length) {
+        this.clearRows(filledRows);
+      } else {
+        this.makeFigure();
+      }
+    });
+
     this.events.emit(Playground.EVENTS.MADE_FIGURE, this.figure);
+  }
+
+  /**
+   *
+   * @param {number[]} lines
+   * @returns {boolean}
+   */
+  clearRows(lines) {
+    this.events.emit(Playground.EVENTS.BEFORE_CLEARING_ROWS, lines);
+
+    this.figure.destroy();
+    this.figure = null;
+
+    lines
+      .reduce(
+        (prev, value) => prev.concat(this.gameMap.getBricksInRow(value)),
+        []
+      )
+      .forEach((brick) => {
+        this.bricks = this.bricks.filter((item) => item !== brick);
+        brick.destroy();
+      });
+
+    /** @type {Brick[]} */
+    const animatedBricks = [];
+    for (let row = this.gameMap.rows - 1, offset = 0; row >= 0; row--) {
+      const lineIndex = lines.indexOf(row);
+      if (lineIndex !== -1) {
+        offset += 1;
+        continue;
+      }
+      if (offset === 0) {
+        continue;
+      }
+      this.gameMap.getBricksInRow(row).forEach((brick) => {
+        brick.smoothMoveStart(
+          this.gameMap.getMapCell(
+            brick.gameMapCell.col,
+            brick.gameMapCell.row + offset
+          )
+        );
+        animatedBricks.push(brick);
+      });
+    }
+
+    this.falling.isActive = true;
+    this.falling.progress = false;
+
+    this.stream.child(
+      new StreamValue({
+        fn: (value, stream) => {
+          this.falling.progress = Math.max(
+            0,
+            Math.min(
+              1,
+              (value - RotationAnimationGameObject.ROTATION_TIME) /
+                Playground.FALLING_SPEED
+            )
+          );
+          if (this.falling.progress === 1) {
+            this.falling.isActive = false;
+            this.falling.progress = 0;
+            animatedBricks.forEach((brick) => brick.smoothMoveStop());
+            stream.destroy();
+          }
+          return value + Game.dt;
+        },
+        initialValue: 0,
+        name: "FallingStream",
+      })
+    );
   }
 
   update() {
@@ -132,20 +247,28 @@ export class Playground {
       return;
     }
 
-    if (!this.figure) {
-      this.makeFigure();
+    if (this.falling.isActive) {
       return;
     }
 
+    if (!this.figure) {
+      this.makeFigure();
+    }
+
     if (this.figure.isBlockMoving()) {
-      this.moveIntervalTime = this.moveInterval;
+      // this.moveIntervalTime = this.moveInterval;
       return;
     }
 
     if (this.moveIntervalTime >= this.moveInterval) {
       this.moveIntervalTime = 0;
       if (this.figure.isTheEnd()) {
-        this.makeFigure();
+        const filledRows = this.gameMap.getFilledLines();
+        if (filledRows.length) {
+          this.clearRows(filledRows);
+        } else {
+          this.makeFigure();
+        }
       } else {
         this.figure.tryMoveBottom();
       }

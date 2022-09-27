@@ -1,24 +1,30 @@
 import { GameObjectCanvas, Jobs } from "tiny-game-engine";
-import { Tetris } from "../tetris/Tetris";
+import { Tetris } from "../../Tetris";
 import { PlaygroundBackgroundGameObject } from "./PlaygroundBackgroundGameObject";
-import { Playground } from "./Playground";
+import { Playground } from "../Playground";
 import { BrickGameObject } from "./BrickGameObject";
-import { RootGameObject } from "../root/RootGameObject";
+import { RootGameObject } from "../../game-objects/RootGameObject";
 import { FinishGameObject } from "./FinishGameObject";
-import { Figure } from "./Figure";
-// import { FallingAnimationGameObject } from "./FallingAnimationGameObject";
+import { Figure } from "../Figure";
+import { Brick } from "../Brick";
+
+export const PLAYGROUND_MAP_PADDING = 20;
 
 export class PlaygroundGameObject extends GameObjectCanvas {
+  static WIDTH = 320;
+
+  static HEIGHT = 600;
+
   constructor() {
-    super({ width: 320, height: 600 });
+    super({
+      width: PlaygroundGameObject.WIDTH,
+      height: PlaygroundGameObject.HEIGHT,
+    });
 
     this.destroyingJobs = new Jobs();
 
     this.playgroundBackgroundGameObject = new PlaygroundBackgroundGameObject();
     this.playgroundBackgroundGameObject.subscribe(this);
-
-    // this.fallingAnimationGameObject = new FallingAnimationGameObject();
-    // this.fallingAnimationGameObject.subscribe(this);
 
     /** @type {Array<BrickGameObject>} */
     this.bricks = [];
@@ -27,17 +33,32 @@ export class PlaygroundGameObject extends GameObjectCanvas {
 
     this.destroyingJobs.addOnce([
       Tetris.playground.events.subscribe(
+        Playground.EVENTS.BEFORE_CLEARING_ROWS,
+        () => {
+          this.markForUpdate(GameObjectCanvas.MARKS.SINGLE, 1);
+        }
+      ),
+      Tetris.playground.events.subscribe(
         Playground.EVENTS.MADE_FIGURE,
         /** @param {Figure} figure */
         (figure) => {
           figure.getAllBricks().forEach((brick) => {
             const brickGameObject = new BrickGameObject(brick);
-            this.bricks.push(brickGameObject);
             brickGameObject.subscribe(this);
+
+            brick.events.subscribeOnce(Brick.EVENTS.DESTROY, () => {
+              this.bricks = this.bricks.filter(
+                (item) => item !== brickGameObject
+              );
+              brickGameObject.destroy();
+            });
+
+            this.bricks.push(brickGameObject);
           });
+
           this.finishGameObject = new FinishGameObject(figure);
           this.finishGameObject.subscribe(this);
-          // this.fallingAnimationGameObject.listenFigure(figure);
+
           figure.events.subscribeOnce(Figure.EVENTS.DESTROY, () => {
             this.finishGameObject.destroy();
             this.finishGameObject = null;
@@ -59,8 +80,6 @@ export class PlaygroundGameObject extends GameObjectCanvas {
       const { x, y } = brickGameObject.getPosition();
       this.draw(brickGameObject, 20 + x, 20 + y);
     });
-
-    // this.draw(this.fallingAnimationGameObject);
   }
 
   getPosition() {

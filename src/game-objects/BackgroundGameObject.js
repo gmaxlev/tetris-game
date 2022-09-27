@@ -1,12 +1,32 @@
-import { GameObjectCanvas, Vector2, Jobs } from "tiny-game-engine";
-import { Tetris } from "../tetris/Tetris";
-import { World } from "../world/World";
+import {
+  GameObjectCanvas,
+  Vector2,
+  PolyBezier,
+  Bezier,
+  StreamValue,
+  Game,
+} from "tiny-game-engine";
+import { Tetris } from "../Tetris";
 
 export class BackgroundGameObject extends GameObjectCanvas {
   constructor(width, height) {
     super({ width, height });
 
     this.sunPicture = Tetris.resourcesMap.sun.get();
+
+    this.appearingCurve = new PolyBezier([
+      new Bezier([
+        new Vector2(0, 0),
+        new Vector2(50, 0),
+        new Vector2(100, -2350),
+        new Vector2(150, -2350),
+      ]),
+      new Bezier([
+        new Vector2(150, -2350),
+        new Vector2(300, -2300),
+        new Vector2(1800, -2300),
+      ]),
+    ]);
 
     this.objects = [
       {
@@ -41,16 +61,28 @@ export class BackgroundGameObject extends GameObjectCanvas {
       },
     ];
 
-    this.destroyingJobs = new Jobs();
+    this.yProgress = 0;
 
-    this.destroyingJobs.addOnce([
-      World.events.subscribe(World.EVENTS.START_TRANSITION_TO_GAME, () => {
-        this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
-      }),
-      World.events.subscribe(World.EVENTS.END_TRANSITION_TO_GAME, () => {
-        this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
-      }),
-    ]);
+    this.stream = new StreamValue({
+      fn: (value) => {
+        const progress = Math.min(1, value / 5000);
+        this.yProgress = progress;
+        if (progress === 1) {
+          Game.jobs.afterUpdate.addOnce(() => {
+            this.stream.stop();
+            this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
+          });
+        }
+
+        return value + Game.dt;
+      },
+      initialValue: 0,
+      name: "BackgroundGameObject",
+    });
+
+    Tetris.stream.child(this.stream);
+
+    this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
   }
 
   render() {
@@ -61,13 +93,15 @@ export class BackgroundGameObject extends GameObjectCanvas {
 
     this.objects.forEach((object) => {
       const x = object.position.x * object.distance;
-      const y = (object.position.y - World.camera.y) * object.distance;
+      const y =
+        (object.position.y - this.appearingCurve.getPoint(this.yProgress).y) *
+        object.distance;
       this.ctx.drawImage(object.image, x, y);
     });
   }
 
   destroy() {
-    this.destroyingJobs.run();
+    this.stream.destroy();
     super.destroy();
   }
 }
