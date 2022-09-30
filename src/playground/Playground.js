@@ -4,6 +4,7 @@ import {
   EventEmitter,
   Game,
   StreamValue,
+  createArrayFrom,
 } from "tiny-game-engine";
 import { GameMap } from "./GameMap";
 import { Figure } from "./Figure";
@@ -31,6 +32,8 @@ export class Playground {
 
     this.moveIntervalTime = 0;
     this.moveInterval = 1000;
+
+    this.queue = createArrayFrom(3).map(() => new Figure(this, this.gameMap));
 
     /**
      * The current tetrominos that is being controlled
@@ -155,7 +158,8 @@ export class Playground {
       this.figure.destroy();
       this.figure = null;
     }
-    this.figure = new Figure(this, this.gameMap);
+    this.figure = this.queue.shift();
+    this.figure.activate();
     this.bricks = this.bricks.concat(this.figure.getAllBricks());
     this.stream.child(this.figure.stream);
 
@@ -167,6 +171,8 @@ export class Playground {
         this.makeFigure();
       }
     });
+
+    this.queue.push(new Figure(this, this.gameMap));
 
     this.events.emit(Playground.EVENTS.MADE_FIGURE, this.figure);
   }

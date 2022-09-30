@@ -4,10 +4,14 @@ import { BlackoutGameObject } from "./BlackoutGameObject";
 import { BackgroundGameObject } from "./BackgroundGameObject";
 import { Blackout } from "../Blackout";
 import { Tetris } from "../Tetris";
-import { PlaygroundGameObject } from "../playground/game-objects/PlaygroundGameObject";
+import {
+  PLAYGROUND_MAP_PADDING,
+  PlaygroundGameObject,
+} from "../playground/game-objects/PlaygroundGameObject";
 import { FallingAnimationGameObject } from "../playground/game-objects/animations/FallingAnimationGameObject";
 import { ExplosionAnimationGameObject } from "../playground/game-objects/animations/ExplosionAnimationGameObject";
 import { FlyingDotsAnimationsGameObject } from "./animations/FlyingDotsAnimationsGameObject";
+import { QueueGameObject } from "../playground/game-objects/QueueGameObject";
 
 export class RootGameObject extends GameObjectCanvas {
   static WIDTH = 600;
@@ -25,6 +29,7 @@ export class RootGameObject extends GameObjectCanvas {
     this.fallingAnimationGameObject = null;
     this.explosionGameObject = null;
     this.flyingDotsAnimationGameObject = null;
+    this.queueGameObject = null;
 
     this.loadingGameObject = new LoadingGameObject(
       this.size.width,
@@ -50,6 +55,9 @@ export class RootGameObject extends GameObjectCanvas {
 
         Tetris.makePlayground();
         this.playgroundGameObject = new PlaygroundGameObject();
+        this.playgroundGameObject.subscribe(this);
+
+        this.queueGameObject = new QueueGameObject();
         this.playgroundGameObject.subscribe(this);
 
         this.fallingAnimationGameObject = new FallingAnimationGameObject();
@@ -92,6 +100,13 @@ export class RootGameObject extends GameObjectCanvas {
     if (this.playgroundGameObject) {
       const { x, y } = this.playgroundGameObject.getPosition();
       this.draw(this.playgroundGameObject, x, y);
+      this.draw(
+        this.queueGameObject,
+        this.size.width +
+          PLAYGROUND_MAP_PADDING / 2 -
+          (this.size.width - this.playgroundGameObject.size.width) / 2,
+        (this.size.height - this.playgroundGameObject.size.height) / 2
+      );
       this.draw(this.fallingAnimationGameObject, x, y);
       this.draw(this.explosionGameObject, x + 20, y + 20);
     }

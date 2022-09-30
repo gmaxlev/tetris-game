@@ -46,16 +46,6 @@ export class Figure {
     /** @type {Brick[]} */
     this.bricks = [];
 
-    this.createTetrominoPositions(
-      this.activeTetromino,
-      this.position.x,
-      this.position.y
-    ).forEach(([pX, pY]) => {
-      this.bricks.push(
-        new Brick(this, playground, this.gameMap.getMapCell(pX, pY), this.color)
-      );
-    });
-
     this.finish = {
       position: new Vector2(0, 0),
       bricksPosition: [],
@@ -69,11 +59,27 @@ export class Figure {
       },
     };
 
-    this.updateFinish();
-
     this.stream = new Stream({
       name: "Figure",
     });
+  }
+
+  activate() {
+    this.createTetrominoPositions(
+      this.activeTetromino,
+      this.position.x,
+      this.position.y
+    ).forEach(([pX, pY]) => {
+      this.bricks.push(
+        new Brick(
+          this,
+          this.playground,
+          this.gameMap.getMapCell(pX, pY),
+          this.color
+        )
+      );
+    });
+    this.updateFinish();
   }
 
   /**

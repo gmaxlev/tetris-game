@@ -30,7 +30,7 @@ export class FallingAnimationGameObject extends GameObjectPure {
 
   static DOTS_ANIMATION_TIME_TO = 1500;
 
-  static PROBABILITY_DOTS_APPEARING = 0.2;
+  static PROBABILITY_DOTS_APPEARING = 0.15;
 
   static DOT_SIZE_FROM = 5;
 
