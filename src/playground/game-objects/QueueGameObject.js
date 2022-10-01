@@ -6,6 +6,7 @@ import {
   shuffleArray,
   Game,
   buildCanvasFont,
+  Bezier,
 } from "tiny-game-engine";
 import { Tetris } from "../../Tetris";
 import { Playground } from "../Playground";
@@ -30,6 +31,8 @@ export class QueueGameObject extends GameObjectCanvas {
     this.gradient = this.ctx.createLinearGradient(0, 0, 0, this.size.height);
     this.gradient.addColorStop(0, "rgba(255,255,255,0)");
     this.gradient.addColorStop(0.8, "rgba(255,255,255,0.3)");
+
+    this.curve = new Bezier([0, 2, 1]);
 
     this.queue = Tetris.playground.queue.map((figure) =>
       this.createFigureState(figure)
@@ -152,11 +155,12 @@ export class QueueGameObject extends GameObjectCanvas {
           if (col === 1) {
             this.ctx.save();
 
-            const appearProgress =
+            const appearProgress = this.curve.getPoint(
               Math.max(0, progress[index].time - progress[index].offset) /
-              QueueGameObject.APPEAR_TIME;
+                QueueGameObject.APPEAR_TIME
+            );
 
-            this.ctx.globalAlpha = appearProgress;
+            this.ctx.globalAlpha = Math.min(1, appearProgress);
 
             const x = Math.floor(
               colIndex * QueueGameObject.BRICK_SIZE - offsetX

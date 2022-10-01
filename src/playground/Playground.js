@@ -16,6 +16,7 @@ export class Playground {
     MADE_FIGURE: Symbol("MADE_FIGURE"),
     TEST: Symbol("TEST"),
     BEFORE_CLEARING_ROWS: Symbol("BEFORE_CLEARING_ROWS"),
+    UPDATE_LEVEL: Symbol("UPDATE_LEVEL"),
   };
 
   static FALLING_SPEED = 100;
@@ -34,6 +35,10 @@ export class Playground {
     this.moveInterval = 1000;
 
     this.queue = createArrayFrom(3).map(() => new Figure(this, this.gameMap));
+
+    this.destroyedRows = 0;
+
+    this.level = 1;
 
     /**
      * The current tetrominos that is being controlled
@@ -177,6 +182,15 @@ export class Playground {
     this.events.emit(Playground.EVENTS.MADE_FIGURE, this.figure);
   }
 
+  updateLevel() {
+    const level = 1 + Math.floor(this.destroyedRows / 10);
+    if (level !== this.level) {
+      this.moveInterval = Math.max(0, 1000 - 50 * this.level);
+      this.level = level;
+      this.events.emit(Playground.EVENTS.UPDATE_LEVEL, this.level);
+    }
+  }
+
   /**
    *
    * @param {number[]} lines
@@ -184,6 +198,8 @@ export class Playground {
    */
   clearRows(lines) {
     this.events.emit(Playground.EVENTS.BEFORE_CLEARING_ROWS, lines);
+
+    this.destroyedRows += lines.length;
 
     this.figure.destroy();
     this.figure = null;
@@ -219,6 +235,8 @@ export class Playground {
         animatedBricks.push(brick);
       });
     }
+
+    this.updateLevel();
 
     this.falling.isActive = true;
     this.falling.progress = false;

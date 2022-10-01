@@ -12,6 +12,7 @@ import { FallingAnimationGameObject } from "../playground/game-objects/animation
 import { ExplosionAnimationGameObject } from "../playground/game-objects/animations/ExplosionAnimationGameObject";
 import { FlyingDotsAnimationsGameObject } from "./animations/FlyingDotsAnimationsGameObject";
 import { QueueGameObject } from "../playground/game-objects/QueueGameObject";
+import { LevelGameObject } from "../playground/game-objects/LevelGameObject";
 
 export class RootGameObject extends GameObjectCanvas {
   static WIDTH = 600;
@@ -30,6 +31,7 @@ export class RootGameObject extends GameObjectCanvas {
     this.explosionGameObject = null;
     this.flyingDotsAnimationGameObject = null;
     this.queueGameObject = null;
+    this.levelGameObject = null;
 
     this.loadingGameObject = new LoadingGameObject(
       this.size.width,
@@ -59,6 +61,9 @@ export class RootGameObject extends GameObjectCanvas {
 
         this.queueGameObject = new QueueGameObject();
         this.playgroundGameObject.subscribe(this);
+
+        this.levelGameObject = new LevelGameObject();
+        this.levelGameObject.subscribe(this);
 
         this.fallingAnimationGameObject = new FallingAnimationGameObject();
         this.fallingAnimationGameObject.subscribe(this);
@@ -100,12 +105,21 @@ export class RootGameObject extends GameObjectCanvas {
     if (this.playgroundGameObject) {
       const { x, y } = this.playgroundGameObject.getPosition();
       this.draw(this.playgroundGameObject, x, y);
-      this.draw(
-        this.queueGameObject,
+
+      const sideCenter =
         this.size.width +
-          PLAYGROUND_MAP_PADDING / 2 -
-          (this.size.width - this.playgroundGameObject.size.width) / 2,
-        (this.size.height - this.playgroundGameObject.size.height) / 2
+        PLAYGROUND_MAP_PADDING / 2 -
+        (this.size.width - this.playgroundGameObject.size.width) / 2;
+
+      const queueY =
+        (this.size.height - this.playgroundGameObject.size.height) / 2;
+
+      this.draw(this.queueGameObject, sideCenter, queueY);
+
+      this.draw(
+        this.levelGameObject,
+        sideCenter,
+        queueY + this.queueGameObject.size.height + 1
       );
       this.draw(this.fallingAnimationGameObject, x, y);
       this.draw(this.explosionGameObject, x + 20, y + 20);
