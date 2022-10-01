@@ -5,6 +5,7 @@ import {
   Stream,
   shuffleArray,
   Game,
+  buildCanvasFont,
 } from "tiny-game-engine";
 import { Tetris } from "../../Tetris";
 import { Playground } from "../Playground";
@@ -22,7 +23,8 @@ export class QueueGameObject extends GameObjectCanvas {
       height:
         QueueGameObject.PADDING * 2 +
         4 * QueueGameObject.BRICK_SIZE * 3 +
-        3 * QueueGameObject.BRICK_SIZE,
+        3 * QueueGameObject.BRICK_SIZE +
+        20,
     });
 
     this.gradient = this.ctx.createLinearGradient(0, 0, 0, this.size.height);
@@ -122,9 +124,19 @@ export class QueueGameObject extends GameObjectCanvas {
       );
     }
 
+    this.ctx.font = buildCanvasFont({
+      fontSize: "20px",
+      fontFamily: "RubikMonoOne",
+    });
     this.ctx.fillStyle = "#fff";
 
-    let eachOffset = 0;
+    const { width } = this.ctx.measureText("NEXT");
+
+    this.ctx.fillText("NEXT", (this.size.width - width) / 2, 40);
+
+    this.ctx.fillStyle = "#fff";
+
+    let eachOffset = 20;
     this.queue.forEach(({ figure, progress }) => {
       let index = 0;
       figure.activeTetromino.positions.forEach((row, rowIndex) => {

@@ -27,6 +27,10 @@ export const Tetris = new (class Tetris {
       m6: new Resource("public/resources/m6.png"),
       sun: new Resource("public/resources/sun.png"),
       playground: new Resource("public/resources/playground.png"),
+      RubikMonoOne: new Resource("public/resources/RubikMonoOne-Regular.ttf", {
+        fontName: "RubikMonoOne",
+        fontWeight: "400",
+      }),
     };
 
     this.resources = new Resources();
