@@ -52,7 +52,7 @@ export class GameMap {
    * @returns {GameMapCell}
    */
   getMapCell(x, y) {
-    return this.map[y][x];
+    return this.map[y] ? this.map[y][x] : null;
   }
 
   /**

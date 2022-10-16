@@ -8,7 +8,6 @@ import {
   Bezier,
 } from "tiny-game-engine";
 import { BRICK_SIZE } from "../BrickGameObject";
-import { Tetris } from "../../../Tetris";
 
 /**
  * Flying Bricks Animation
@@ -22,9 +21,9 @@ export class FlyingAnimationBricksGameObject extends GameObjectPure {
 
   static FLYING_BRICKS_ROTATION_SPEED = 30;
 
-  static FLYING_BRICKS_TIME_FROM = 2000;
+  static FLYING_BRICKS_TIME_FROM = 1000;
 
-  static FLYING_BRICKS_TIME_TO = 4000;
+  static FLYING_BRICKS_TIME_TO = 3000;
 
   static FLYING_BRICKS_SPEED_FROM = 1750;
 
@@ -34,20 +33,29 @@ export class FlyingAnimationBricksGameObject extends GameObjectPure {
 
   static FLYING_BRICKS_SIZE_TO = 20;
 
-  constructor(width, height) {
+  /**
+   * @param {Playground} playground
+   * @param width
+   * @param height
+   */
+  constructor(playground, width, height) {
     super();
     this.width = width;
     this.height = height;
     this.bricks = [];
-    this.curveSpeedBricks = new Bezier([0, 0.9, 1, 1]);
+    this.curveSpeedBricks = new Bezier([0, 0.8, 0.9, 1]);
     this.stream = new Stream({
       fn: () => this.updateStream(),
       name: "FlyingAnimationBricksGameObject",
       start: false,
     });
-    Tetris.playground.stream.child(this.stream);
+    playground.stream.child(this.stream);
   }
 
+  /**
+   * Adds animations
+   * @param {Array<{x: number, y: number, delay: number, color: *}>} bricks
+   */
   add(bricks) {
     bricks.forEach(({ x, y, color, delay }) => {
       const angle = getRandomInt(0, 360);
@@ -178,6 +186,10 @@ export class FlyingAnimationBricksGameObject extends GameObjectPure {
           Math.min(1, Math.max(0, beforeTime / time))
         );
 
+        if (selfProgress === 1) {
+          return;
+        }
+
         const decreasedSize = (size / 2) * selfProgress;
         const calcSize = size - decreasedSize;
 
@@ -197,5 +209,10 @@ export class FlyingAnimationBricksGameObject extends GameObjectPure {
         ctx.restore();
       }
     );
+  }
+
+  destroy() {
+    this.stream.destroy();
+    super.destroy();
   }
 }

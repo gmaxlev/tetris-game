@@ -1,17 +1,20 @@
 import { EventEmitter } from "tiny-game-engine";
 
-export const Blackout = {
-  EVENTS: {
-    LIGHT: Symbol("LIGHT"),
+export class Blackout {
+  static EVENTS = {
     DARK: Symbol("DARK"),
-  },
-  events: new EventEmitter(),
-  light() {
-    this.events.emit(Blackout.EVENTS.LIGHT);
-  },
+    LIGHT: Symbol("LIGHT"),
+  };
+
+  constructor() {
+    this.events = new EventEmitter();
+  }
+
   dark() {
     this.events.emit(Blackout.EVENTS.DARK);
-  },
-};
+  }
 
-window.b = Blackout;
+  light() {
+    this.events.emit(Blackout.EVENTS.LIGHT);
+  }
+}

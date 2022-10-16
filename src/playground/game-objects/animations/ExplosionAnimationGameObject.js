@@ -1,15 +1,21 @@
-import { GameObjectPure, Stream, toRGBA } from "tiny-game-engine";
-import { BRICK_SIZE } from "../BrickGameObject";
-import { Tetris } from "../../../Tetris";
+import { GameObjectPure, Stream, Jobs } from "tiny-game-engine";
 import { Playground } from "../../Playground";
 import { FlyingAnimationBricksGameObject } from "./FlyingAnimationBricksGameObject";
-import { PLAYGROUND_MAP_PADDING } from "../PlaygroundGameObject";
 import { RotationAnimationGameObject } from "./RotationAnimationGameObject";
 import { ZoomAnimationGameObject } from "./ZoomAnimationGameObject";
+import { BRICK_LIGHT_HEIGHT, BRICK_SIZE } from "../BrickGameObject";
 
 export class ExplosionAnimationGameObject extends GameObjectPure {
-  constructor(width, height, playgroundGameObject) {
+  /**
+   * @param {Playground} playground
+   * @param width
+   * @param height
+   * @param playgroundGameObject
+   */
+  constructor(playground, width, height, playgroundGameObject) {
     super();
+
+    this.playground = playground;
 
     this.playgroundGameObject = playgroundGameObject;
 
@@ -18,72 +24,78 @@ export class ExplosionAnimationGameObject extends GameObjectPure {
       start: false,
     });
 
-    Tetris.playground.stream.child(this.stream);
+    this.playground.stream.child(this.stream);
 
-    Tetris.playground.events.subscribe(
-      Playground.EVENTS.BEFORE_CLEARING_ROWS,
-      (rows) => this.addAnimation(rows)
-    );
+    this.destroyJobs = new Jobs();
+    this.destroyJobs.addOnce([
+      this.playground.events.subscribe(
+        Playground.EVENTS.BEFORE_CLEARING_ROWS,
+        (rows) => this.addAnimation(rows)
+      ),
+    ]);
 
     this.flyingAnimationBricksGameObject = new FlyingAnimationBricksGameObject(
+      this.playground,
       width,
       height
     );
     this.flyingAnimationBricksGameObject.subscribe(this);
 
-    this.rotationAnimationGameObject = new RotationAnimationGameObject();
+    this.rotationAnimationGameObject = new RotationAnimationGameObject(
+      this.playground
+    );
     this.rotationAnimationGameObject.subscribe(this);
 
-    this.zoomAnimationGameObject = new ZoomAnimationGameObject();
+    this.zoomAnimationGameObject = new ZoomAnimationGameObject(this.playground);
     this.zoomAnimationGameObject.subscribe(this);
   }
 
+  /**
+   * Adds animations
+   * @param {number[]} rowsList
+   */
   addAnimation(rowsList) {
-    const rows = rowsList.map((row) => ({
-      row,
-      bricks: Tetris.playground.gameMap.getBricksInRow(row),
-    }));
-
-    this.zoomAnimationGameObject.add(
-      rows.reduce(
-        (array, { row, bricks }) =>
-          array.concat(
-            bricks.map((brick, index) => ({
-              row,
-              col: index,
-              delay: RotationAnimationGameObject.ROTATION_TIME,
-              color: brick.color,
-            }))
-          ),
-        []
-      )
+    const bricks = rowsList.reduce(
+      (previousValue, currentValue) =>
+        previousValue.concat(
+          this.playground.gameMap.getBricksInRow(currentValue)
+        ),
+      []
     );
 
     this.rotationAnimationGameObject.add(
-      rows.map((row) => ({
-        row: row.row,
-        bricks: row.bricks.map((brick) => ({
+      bricks.map((brick) => {
+        const { x, y } = brick.gameObject.getAbsolutePosition();
+        return {
+          x: x + BRICK_SIZE / 2,
+          y: y + BRICK_SIZE / 2 + BRICK_LIGHT_HEIGHT,
           color: brick.color,
-        })),
-      }))
+        };
+      })
     );
 
-    const { x: playgroundX, y: playgroundY } =
-      this.playgroundGameObject.getPosition();
+    this.zoomAnimationGameObject.add(
+      bricks.map((brick) => {
+        const { x, y } = brick.gameObject.getAbsolutePosition();
+        return {
+          x: x + BRICK_SIZE / 2,
+          y: y + BRICK_SIZE / 2 + BRICK_LIGHT_HEIGHT,
+          delay: RotationAnimationGameObject.ROTATION_TIME,
+          color: brick.color,
+        };
+      })
+    );
 
     this.flyingAnimationBricksGameObject.add(
-      rows.reduce(
-        (array, { row, bricks }) =>
-          array.concat(
-            bricks.map((brick, index) => ({
-              x: index * BRICK_SIZE + playgroundX + PLAYGROUND_MAP_PADDING,
-              y: row * BRICK_SIZE + playgroundY + PLAYGROUND_MAP_PADDING,
-              color: toRGBA(brick.color),
-              delay: RotationAnimationGameObject.ROTATION_TIME,
-            }))
-          ),
-        []
-      )
+      bricks.map((brick) => {
+        const { x, y } = brick.gameObject.getAbsolutePosition();
+        return {
+          x: x + BRICK_SIZE / 2,
+          y: y + BRICK_SIZE / 2 + BRICK_LIGHT_HEIGHT,
+          delay: RotationAnimationGameObject.ROTATION_TIME,
+          color: brick.color,
+        };
+      })
     );
   }
 
@@ -91,5 +103,14 @@ export class ExplosionAnimationGameObject extends GameObjectPure {
     this.draw(ctx, this.zoomAnimationGameObject, offsetX, offsetY);
     this.draw(ctx, this.flyingAnimationBricksGameObject, offsetX, offsetY);
     this.draw(ctx, this.rotationAnimationGameObject, offsetX, offsetY);
+  }
+
+  destroy() {
+    this.destroyJobs.run();
+    this.stream.destroy();
+    this.flyingAnimationBricksGameObject.destroy();
+    this.zoomAnimationGameObject.destroy();
+    this.rotationAnimationGameObject.destroy();
+    super.destroy();
   }
 }

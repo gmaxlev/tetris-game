@@ -1,11 +1,14 @@
 import { GameObjectCanvas } from "tiny-game-engine";
-import { Tetris } from "../../Tetris";
 import { BRICK_SIZE } from "./BrickGameObject";
 
 export class PlaygroundBackgroundGameObject extends GameObjectCanvas {
-  constructor() {
+  /**
+   * @param {Playground} playground
+   */
+  constructor(playground) {
     super({ width: 320, height: 600 });
 
+    this.playground = playground;
     this.markForUpdate(GameObjectCanvas.MARKS.SINGLE, 1);
   }
 
@@ -44,14 +47,14 @@ export class PlaygroundBackgroundGameObject extends GameObjectCanvas {
 
     this.ctx.save();
     this.ctx.strokeStyle = dotsGradient;
-    for (let row = 1; row < Tetris.playground.gameMap.rows; row++) {
+    for (let row = 1; row < this.playground.gameMap.rows; row++) {
       this.ctx.beginPath();
       this.ctx.moveTo(padding, padding + row * BRICK_SIZE);
       this.ctx.lineTo(this.size.width - padding, padding + BRICK_SIZE * row);
       this.ctx.stroke();
     }
 
-    for (let col = 1; col < Tetris.playground.gameMap.cols; col++) {
+    for (let col = 1; col < this.playground.gameMap.cols; col++) {
       this.ctx.beginPath();
       this.ctx.moveTo(padding + col * BRICK_SIZE, padding);
       this.ctx.lineTo(padding + col * BRICK_SIZE, this.size.height - padding);

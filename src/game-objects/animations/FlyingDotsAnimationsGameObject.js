@@ -10,7 +10,6 @@ import {
   lighten,
   createArrayFrom,
 } from "tiny-game-engine";
-import { Tetris } from "../../Tetris";
 import { RootGameObject } from "../RootGameObject";
 import { BRICKS_COLORS } from "../../constants";
 
@@ -32,8 +31,12 @@ export class FlyingDotsAnimationsGameObject extends GameObjectPure {
 
   static APPEARING_RANGE = [0.4, 0.4];
 
-  constructor() {
+  /**
+   * @param {Tetris} tetris
+   */
+  constructor(tetris) {
     super();
+    this.tetris = tetris;
     this.dots = [];
     this.colors = BRICKS_COLORS.map((color) =>
       pipe(
@@ -51,7 +54,7 @@ export class FlyingDotsAnimationsGameObject extends GameObjectPure {
       initialValue: 0,
       name: "FlyingDotsAnimationGameObject",
     });
-    Tetris.stream.child(this.stream);
+    this.tetris.stream.child(this.stream);
     this.markForUpdate(GameObjectPure.MARKS.SINGLE);
   }
 

@@ -6,13 +6,16 @@ import {
   KeyboardListener,
 } from "tiny-game-engine";
 import { Playground } from "./playground/Playground";
+import { Blackout } from "./Blackout";
 
-export const Tetris = new (class Tetris {
+export class Tetris {
   constructor() {
     this.stream = new Stream({
       name: "Tetris",
     });
     this.events = new EventEmitter();
+
+    this.blackout = new Blackout();
 
     this.keyboardListener = new KeyboardListener();
     this.stream.child(this.keyboardListener.stream);
@@ -43,4 +46,4 @@ export const Tetris = new (class Tetris {
   makePlayground() {
     this.playground = new Playground(this);
   }
-})();
+}

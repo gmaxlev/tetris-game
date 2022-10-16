@@ -7,7 +7,7 @@ import {
   lighten,
 } from "tiny-game-engine";
 import { Brick } from "../Brick";
-import { Tetris } from "../../Tetris";
+import { PLAYGROUND_MAP_PADDING } from "./PlaygroundGameObject";
 
 export const BRICK_SIZE = 28;
 export const BRICK_LIGHT_HEIGHT = 3;
@@ -42,14 +42,19 @@ export class BrickGameObject extends GameObjectCanvas {
   static APPEARING_DELAY = 200;
 
   /**
+   * @param {PlaygroundGameObject} playgroundGameObject
+   * @param {Playground} playground
    * @param {Brick} brick
    */
-  constructor(brick) {
+  constructor(playgroundGameObject, playground, brick) {
     super({
       width: BRICK_SIZE,
       height: BRICK_SIZE + BRICK_LIGHT_HEIGHT + BRICK_DARKEN_HEIGHT,
     });
+    this.playgroundGameObject = playgroundGameObject;
+    this.playground = playground;
     this.brick = brick;
+    this.brick.setGameObject(this);
 
     this.destroyingJobs = new Jobs();
 
@@ -77,7 +82,7 @@ export class BrickGameObject extends GameObjectCanvas {
     ]);
 
     // Add a little delay before appearing :)
-    Tetris.playground.stream.child(
+    this.playground.stream.child(
       new StreamValue({
         fn: (value, stream) => {
           this.opacity = Math.min(1, value / BrickGameObject.APPEARING_DELAY);
@@ -98,6 +103,16 @@ export class BrickGameObject extends GameObjectCanvas {
     this.markForUpdate(BrickGameObject.MARKS.APPEARING);
   }
 
+  getAbsolutePosition() {
+    const { x: playgroundX, y: playgroundY } =
+      this.playgroundGameObject.getPosition();
+    const { x: brickX, y: brickY } = this.getPosition();
+    return {
+      x: playgroundX + brickX + PLAYGROUND_MAP_PADDING,
+      y: playgroundY + brickY + PLAYGROUND_MAP_PADDING,
+    };
+  }
+
   getPosition() {
     if (
       this.brick.figure &&
@@ -115,11 +130,11 @@ export class BrickGameObject extends GameObjectCanvas {
       };
     }
 
-    if (this.brick.smoothMoving && Tetris.playground.falling.isActive) {
+    if (this.brick.smoothMoving && this.playground.falling.isActive) {
       const { x, y } = BrickGameObject.lerpBricksPosition(
         this.brick.gameMapCell,
         this.brick.smoothMoving,
-        Tetris.playground.falling.progress
+        this.playground.falling.progress
       );
       return {
         x,

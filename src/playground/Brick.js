@@ -28,6 +28,7 @@ export class Brick {
     /** @type {GameMapCell} */
     this.smoothMoving = null;
     this.gameMapCell.setBrick(this);
+    this.gameObject = null;
   }
 
   /** @param {GameMapCell} gameMapCell */
@@ -105,6 +106,10 @@ export class Brick {
 
   removeFromFigure() {
     this.figure = null;
+  }
+
+  setGameObject(gameObject) {
+    this.gameObject = gameObject;
   }
 
   destroy() {

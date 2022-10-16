@@ -7,9 +7,9 @@ import {
   toRGBA,
   alpha,
   getRandomElement,
+  Jobs,
 } from "tiny-game-engine";
 import { Figure } from "../../Figure";
-import { Tetris } from "../../../Tetris";
 import {
   BRICK_LIGHT_HEIGHT,
   BRICK_SIZE,
@@ -40,7 +40,11 @@ export class FallingAnimationGameObject extends GameObjectPure {
 
   static DOT_ANGLE_MOVING_TO = 120;
 
-  constructor() {
+  /**
+   * @param {Playground} playground
+   * @param {PlaygroundGameObject} playgroundGameObject
+   */
+  constructor(playground, playgroundGameObject) {
     super();
 
     this.animations = [];
@@ -51,16 +55,19 @@ export class FallingAnimationGameObject extends GameObjectPure {
       name: "FallingAnimationGameObject",
     });
 
-    Tetris.playground.events.subscribe(
-      Playground.EVENTS.MADE_FIGURE,
-      (figure) => {
+    this.playgroundGameObject = playgroundGameObject;
+
+    this.destroyJobs = new Jobs();
+
+    this.destroyJobs.addOnce([
+      playground.events.subscribe(Playground.EVENTS.MADE_FIGURE, (figure) => {
         figure.events.subscribeOnce(Figure.EVENTS.FALLING_START, () => {
           this.addAnimation(figure);
         });
-      }
-    );
+      }),
+    ]);
 
-    Tetris.playground.stream.child(this.stream);
+    playground.stream.child(this.stream);
   }
 
   /**
@@ -165,7 +172,10 @@ export class FallingAnimationGameObject extends GameObjectPure {
     });
   }
 
-  render(ctx, offsetX, offsetY) {
+  render(ctx) {
+    const { x: playgroundX, y: playgroundY } =
+      this.playgroundGameObject.getPosition();
+
     this.animations.forEach(
       ({ yStartingPosition, bricks, dots, gradientColors, progress }) => {
         ctx.save();
@@ -174,11 +184,11 @@ export class FallingAnimationGameObject extends GameObjectPure {
         // to the nearest top bricks
         const gradient = ctx.createLinearGradient(
           0,
-          yStartingPosition + offsetY,
+          yStartingPosition + playgroundY,
           0,
           yStartingPosition +
             Math.min(...bricks.map((item) => item.fallingHeight)) +
-            offsetY -
+            playgroundY -
             BRICK_LIGHT_HEIGHT
         );
 
@@ -209,8 +219,8 @@ export class FallingAnimationGameObject extends GameObjectPure {
           ctx.fillStyle = gradient;
 
           ctx.fillRect(
-            item.xStartingPosition + offsetX,
-            yStartingPosition + offsetY,
+            item.xStartingPosition + playgroundX,
+            yStartingPosition + playgroundY,
             BRICK_SIZE,
             item.fallingHeight
           );
@@ -224,8 +234,8 @@ export class FallingAnimationGameObject extends GameObjectPure {
             ctx.globalAlpha = 1 - Math.min(1, dot.progress / dot.time);
             const offset = dot.progress * (dot.speed / 1000);
             ctx.fillRect(
-              dot.x - offset * dot.cos + offsetX,
-              dot.y - offset * dot.sin + offsetY,
+              dot.x - offset * dot.cos + playgroundX,
+              dot.y - offset * dot.sin + playgroundY,
               dot.size,
               dot.size
             );
@@ -239,6 +249,7 @@ export class FallingAnimationGameObject extends GameObjectPure {
   }
 
   destroy() {
+    this.destroyJobs.run();
     this.stream.destroy();
     super.destroy();
   }

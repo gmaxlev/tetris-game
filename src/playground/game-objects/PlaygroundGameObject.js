@@ -1,5 +1,4 @@
 import { GameObjectCanvas, Jobs } from "tiny-game-engine";
-import { Tetris } from "../../Tetris";
 import { PlaygroundBackgroundGameObject } from "./PlaygroundBackgroundGameObject";
 import { Playground } from "../Playground";
 import { BrickGameObject } from "./BrickGameObject";
@@ -15,15 +14,27 @@ export class PlaygroundGameObject extends GameObjectCanvas {
 
   static HEIGHT = 600;
 
-  constructor() {
+  /**
+   * @param {Playground} playground
+   */
+  constructor(playground) {
     super({
       width: PlaygroundGameObject.WIDTH,
       height: PlaygroundGameObject.HEIGHT,
     });
 
+    this.playground = playground;
+
+    this.defaultPosition = {
+      x: (RootGameObject.WIDTH - this.size.width) / 2,
+      y: (RootGameObject.HEIGHT - this.size.height) / 2,
+    };
+
     this.destroyingJobs = new Jobs();
 
-    this.playgroundBackgroundGameObject = new PlaygroundBackgroundGameObject();
+    this.playgroundBackgroundGameObject = new PlaygroundBackgroundGameObject(
+      this.playground
+    );
     this.playgroundBackgroundGameObject.subscribe(this);
 
     /** @type {Array<BrickGameObject>} */
@@ -32,18 +43,22 @@ export class PlaygroundGameObject extends GameObjectCanvas {
     this.finishGameObject = null;
 
     this.destroyingJobs.addOnce([
-      Tetris.playground.events.subscribe(
+      this.playground.events.subscribe(
         Playground.EVENTS.BEFORE_CLEARING_ROWS,
         () => {
           this.markForUpdate(GameObjectCanvas.MARKS.SINGLE, 1);
         }
       ),
-      Tetris.playground.events.subscribe(
+      this.playground.events.subscribe(
         Playground.EVENTS.MADE_FIGURE,
         /** @param {Figure} figure */
         (figure) => {
           figure.getAllBricks().forEach((brick) => {
-            const brickGameObject = new BrickGameObject(brick);
+            const brickGameObject = new BrickGameObject(
+              this,
+              this.playground,
+              brick
+            );
             brickGameObject.subscribe(this);
 
             brick.events.subscribeOnce(Brick.EVENTS.DESTROY, () => {
@@ -56,7 +71,7 @@ export class PlaygroundGameObject extends GameObjectCanvas {
             this.bricks.push(brickGameObject);
           });
 
-          this.finishGameObject = new FinishGameObject(figure);
+          this.finishGameObject = new FinishGameObject(this.playground, figure);
           this.finishGameObject.subscribe(this);
 
           figure.events.subscribeOnce(Figure.EVENTS.DESTROY, () => {
@@ -83,10 +98,7 @@ export class PlaygroundGameObject extends GameObjectCanvas {
   }
 
   getPosition() {
-    return {
-      x: (RootGameObject.WIDTH - this.size.width) / 2,
-      y: (RootGameObject.HEIGHT - this.size.height) / 2,
-    };
+    return this.defaultPosition;
   }
 
   destroy() {

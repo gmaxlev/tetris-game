@@ -7,9 +7,9 @@ import {
   Bezier,
   toRGBA,
   colorLerp,
+  resolveColor,
 } from "tiny-game-engine";
 import { BRICK_SIZE } from "../BrickGameObject";
-import { Tetris } from "../../../Tetris";
 
 /**
  * Zoom Animation
@@ -28,7 +28,10 @@ export class ZoomAnimationGameObject extends GameObjectPure {
 
   static ZOOM_ANGLE = 45;
 
-  constructor() {
+  /**
+   * @param {Playground} playground
+   */
+  constructor(playground) {
     super();
 
     this.zooms = [];
@@ -41,12 +44,16 @@ export class ZoomAnimationGameObject extends GameObjectPure {
       name: "ZoomAnimationGameObject",
     });
 
-    Tetris.playground.stream.child(this.stream);
+    playground.stream.child(this.stream);
   }
 
-  add(bricks) {
+  /**
+   * Adds animations
+   * @param {Array<{x: number, y: number, delay: number, color: *}>} zooms
+   */
+  add(zooms) {
     this.zooms = this.zooms.concat(
-      bricks.map(({ col, row, delay, color }) => ({
+      zooms.map(({ x, y, color, delay = 0 }) => ({
         progress: 0,
         time: getRandomInt(
           ZoomAnimationGameObject.ZOOM_TIME_FROM,
@@ -56,10 +63,10 @@ export class ZoomAnimationGameObject extends GameObjectPure {
           ZoomAnimationGameObject.ZOOM_INCREASE_FROM,
           ZoomAnimationGameObject.ZOOM_INCREASE_TO
         ),
-        color,
+        color: resolveColor(color),
         delay,
-        col,
-        row,
+        x,
+        y,
       }))
     );
 
@@ -85,39 +92,43 @@ export class ZoomAnimationGameObject extends GameObjectPure {
     });
   }
 
-  render(ctx, offsetX, offsetY) {
-    this.zooms.forEach(
-      ({ progress, time, row, color, col, increase, delay }) => {
-        const beforeTime = progress - delay;
+  render(ctx) {
+    this.zooms.forEach(({ progress, time, color, x, y, increase, delay }) => {
+      const beforeTime = progress - delay;
 
-        // Skip the animation if the rotation animation has not finished yet
-        if (beforeTime < 0) {
-          return;
-        }
-
-        const selfProgress = this.curveExplosionIncreasing.getPoint(
-          Math.min(1, Math.max(0, beforeTime / time))
-        );
-
-        const size =
-          BRICK_SIZE / ZoomAnimationGameObject.ZOOM_DECREASING_BY +
-          BRICK_SIZE * increase * selfProgress;
-
-        const x = col * BRICK_SIZE + offsetX;
-        const y = row * BRICK_SIZE + offsetY;
-
-        ctx.save();
-
-        ctx.globalAlpha = 1 - selfProgress;
-
-        ctx.translate(x + BRICK_SIZE / 2, y + BRICK_SIZE / 2);
-
-        ctx.rotate(ZoomAnimationGameObject.ZOOM_ANGLE * PI_OVER_180);
-
-        ctx.fillStyle = toRGBA(colorLerp([255, 255, 255], color, selfProgress));
-        ctx.fillRect(-size / 2, -size / 2, size, size);
-        ctx.restore();
+      // Skip the animation if the rotation animation has not finished yet
+      if (beforeTime < 0) {
+        return;
       }
-    );
+
+      const selfProgress = this.curveExplosionIncreasing.getPoint(
+        Math.min(1, Math.max(0, beforeTime / time))
+      );
+
+      if (selfProgress === 1) {
+        return;
+      }
+
+      const size =
+        BRICK_SIZE / ZoomAnimationGameObject.ZOOM_DECREASING_BY +
+        BRICK_SIZE * increase * selfProgress;
+
+      ctx.save();
+
+      ctx.globalAlpha = 1 - selfProgress;
+
+      ctx.translate(x, y);
+
+      ctx.rotate(ZoomAnimationGameObject.ZOOM_ANGLE * PI_OVER_180);
+
+      ctx.fillStyle = toRGBA(colorLerp([255, 255, 255], color, selfProgress));
+      ctx.fillRect(-size / 2, -size / 2, size, size);
+      ctx.restore();
+    });
+  }
+
+  destroy() {
+    this.stream.destroy();
+    super.destroy();
   }
 }

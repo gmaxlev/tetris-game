@@ -5,7 +5,6 @@ import {
   KeyFrames,
   Bezier,
 } from "tiny-game-engine";
-import { Tetris } from "../Tetris";
 
 const INDICATOR_WIDTH = 400;
 const INDICATOR_HEIGHT = 20;
@@ -16,8 +15,13 @@ export class LoadingGameObject extends GameObjectPure {
     DONE: Symbol("DONE"),
   };
 
-  constructor() {
+  /**
+   * @param {Tetris} tetris
+   */
+  constructor(tetris) {
     super();
+
+    this.tetris = tetris;
 
     this.indicatorWidth = 0;
 
@@ -41,7 +45,7 @@ export class LoadingGameObject extends GameObjectPure {
         if (this.indicatorWidth !== INDICATOR_WIDTH) {
           const add = Game.dt * (300 / 1000);
           this.indicatorWidth = Math.min(
-            INDICATOR_WIDTH * Tetris.resources.loadingProgress,
+            INDICATOR_WIDTH * this.tetris.resources.loadingProgress,
             this.indicatorWidth + add
           );
         } else if (!this.decreaseHeightKeyFrames.isActive) {

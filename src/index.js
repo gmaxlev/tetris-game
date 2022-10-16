@@ -3,7 +3,9 @@ import { Tetris } from "./Tetris";
 import { RootGameObject } from "./game-objects/RootGameObject";
 // import { One } from "./test";
 
-const rootGameObject = new RootGameObject();
+const tetris = new Tetris();
+
+const rootGameObject = new RootGameObject(tetris);
 
 rootGameObject.canvas.style.margin = "0 auto";
 rootGameObject.canvas.style.borderRadius = "10px";
@@ -32,6 +34,6 @@ window.g = rootGameObject;
 // Game.stream.child(interactiveDisplay.stream);
 // interactiveDisplay.run();
 
-Game.stream.child(Tetris.stream);
+Game.stream.child(tetris.stream);
 game.run();
-Tetris.resources.load();
+tetris.resources.load();

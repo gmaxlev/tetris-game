@@ -5,7 +5,6 @@ import {
   Game,
   Bezier,
 } from "tiny-game-engine";
-import { Tetris } from "../../Tetris";
 import { Playground } from "../Playground";
 
 export class LevelGameObject extends GameObjectCanvas {
@@ -13,7 +12,10 @@ export class LevelGameObject extends GameObjectCanvas {
 
   static DISAPPEAR_TIME = 500;
 
-  constructor() {
+  /**
+   * @param {Playground} playground
+   */
+  constructor(playground) {
     super({
       width: 100,
       height: 200,
@@ -38,22 +40,13 @@ export class LevelGameObject extends GameObjectCanvas {
       start: false,
     });
 
-    Tetris.playground.stream.child(this.stream);
+    playground.stream.child(this.stream);
 
-    Tetris.playground.events.subscribe(
-      Playground.EVENTS.UPDATE_LEVEL,
-      (level) => {
-        this.level[1] = level;
-        this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
-        this.stream.continue();
-      }
-    );
-
-    window.l = (level) => {
+    playground.events.subscribe(Playground.EVENTS.UPDATE_LEVEL, (level) => {
       this.level[1] = level;
       this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
       this.stream.continue();
-    };
+    });
 
     this.markForUpdate(GameObjectCanvas.MARKS.SINGLE, 1);
   }
@@ -82,6 +75,13 @@ export class LevelGameObject extends GameObjectCanvas {
       return 0;
     }
     return value + Game.dt;
+  }
+
+  getPosition() {
+    return {
+      x: 470,
+      y: 471,
+    };
   }
 
   render() {

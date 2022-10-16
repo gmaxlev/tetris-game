@@ -8,7 +8,6 @@ import {
 } from "tiny-game-engine";
 import { BRICK_SIZE } from "./BrickGameObject";
 import { Figure } from "../Figure";
-import { Tetris } from "../../Tetris";
 
 export class FinishGameObject extends GameObjectCanvas {
   static MARKS = {
@@ -16,11 +15,16 @@ export class FinishGameObject extends GameObjectCanvas {
     MOVE: Symbol("MOVE"),
   };
 
-  constructor(figure) {
+  /**
+   * @param {Playground} playground
+   * @param {Figure} figure
+   */
+  constructor(playground, figure) {
     super({
       width: figure.activeTetromino.size * BRICK_SIZE,
       height: figure.activeTetromino.size * BRICK_SIZE,
     });
+    this.playground = playground;
     this.figure = figure;
 
     this.destrotingJobs = new Jobs();
@@ -32,7 +36,7 @@ export class FinishGameObject extends GameObjectCanvas {
 
     this.opacity = 0;
 
-    Tetris.playground.stream.child(
+    this.playground.stream.child(
       new StreamValue({
         fn: (value, stream) => {
           this.opacity = Math.min(1, value / 200);

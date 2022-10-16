@@ -6,15 +6,24 @@ import {
   StreamValue,
   Game,
 } from "tiny-game-engine";
-import { Tetris } from "../Tetris";
+import { RootGameObject } from "./RootGameObject";
 
+/**
+ *   ^  ^  ^^^  ^  ^^^^ ^^  ^
+ * The background with mountains
+ * ^^^ ^^^  ^   ^  ^^^^  ^  ^
+ */
 export class BackgroundGameObject extends GameObjectCanvas {
-  constructor(width, height) {
-    super({ width, height });
+  /** @param {Tetris} tetris */
+  constructor(tetris) {
+    super({ width: RootGameObject.WIDTH, height: RootGameObject.HEIGHT });
 
-    this.sunPicture = Tetris.resourcesMap.sun.get();
+    this.tetris = tetris;
 
-    this.appearingCurve = new PolyBezier([
+    this.sunPicture = this.tetris.resourcesMap.sun.get();
+
+    // Curve of initial moving above mountains ;)
+    this.appearCurve = new PolyBezier([
       new Bezier([
         new Vector2(0, 0),
         new Vector2(50, 0),
@@ -32,57 +41,60 @@ export class BackgroundGameObject extends GameObjectCanvas {
       {
         position: new Vector2(0, 450 / 0.009),
         distance: 0.009,
-        image: Tetris.resourcesMap.m6.get(),
+        image: this.tetris.resourcesMap.m6.get(),
       },
       {
         position: new Vector2(284 / 0.01, 496 / 0.01),
         distance: 0.01,
-        image: Tetris.resourcesMap.m5.get(),
+        image: this.tetris.resourcesMap.m5.get(),
       },
       {
         position: new Vector2(0, 430 / 0.03),
         distance: 0.03,
-        image: Tetris.resourcesMap.m4.get(),
+        image: this.tetris.resourcesMap.m4.get(),
       },
       {
         position: new Vector2(200 / 0.06, 460 / 0.06),
         distance: 0.06,
-        image: Tetris.resourcesMap.m3.get(),
+        image: this.tetris.resourcesMap.m3.get(),
       },
       {
         position: new Vector2(260 / 0.08, 560 / 0.08),
         distance: 0.08,
-        image: Tetris.resourcesMap.m2.get(),
+        image: this.tetris.resourcesMap.m2.get(),
       },
       {
         position: new Vector2(0, 480 / 0.1),
         distance: 0.1,
-        image: Tetris.resourcesMap.m1.get(),
+        image: this.tetris.resourcesMap.m1.get(),
       },
     ];
 
     this.yProgress = 0;
 
-    this.stream = new StreamValue({
-      fn: (value) => {
-        const progress = Math.min(1, value / 5000);
-        this.yProgress = progress;
-        if (progress === 1) {
-          Game.jobs.afterUpdate.addOnce(() => {
-            this.stream.stop();
-            this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
-          });
-        }
-
-        return value + Game.dt;
-      },
-      initialValue: 0,
-      name: "BackgroundGameObject",
-    });
-
-    Tetris.stream.child(this.stream);
+    this.tetris.stream.child(
+      new StreamValue({
+        fn: (value, stream) => this.updateStream(value, stream),
+        initialValue: 0,
+        name: "BackgroundGameObject",
+      })
+    );
 
     this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
+  }
+
+  updateStream(value, stream) {
+    this.yProgress = Math.min(1, value / 5000);
+
+    if (this.yProgress === 1) {
+      Game.jobs.afterUpdate.addOnce(() => {
+        stream.destroy();
+        this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
+      });
+      return;
+    }
+
+    return value + Game.dt;
   }
 
   render() {
@@ -94,14 +106,9 @@ export class BackgroundGameObject extends GameObjectCanvas {
     this.objects.forEach((object) => {
       const x = object.position.x * object.distance;
       const y =
-        (object.position.y - this.appearingCurve.getPoint(this.yProgress).y) *
+        (object.position.y - this.appearCurve.getPoint(this.yProgress).y) *
         object.distance;
       this.ctx.drawImage(object.image, x, y);
     });
-  }
-
-  destroy() {
-    this.stream.destroy();
-    super.destroy();
   }
 }

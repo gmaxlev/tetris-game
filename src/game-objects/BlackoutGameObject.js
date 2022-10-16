@@ -1,81 +1,76 @@
-import { GameObjectPure, Stream, Game } from "tiny-game-engine";
+import {
+  GameObjectPure,
+  Jobs,
+  Stream,
+  Game,
+  limitNumber,
+} from "tiny-game-engine";
 import { Blackout } from "../Blackout";
 
-const SPEED = 0.5;
-
 export class BlackoutGameObject extends GameObjectPure {
-  static STATES = {
-    DARK: 1,
-    LIGHT: 0,
-  };
+  /**
+   * @param {Tetris} tetris
+   * @param {Blackout} blackout
+   * */
+  constructor(tetris, blackout) {
+    super();
+    this.tetris = tetris;
+    this.blackout = blackout;
+    this.state = [1, 1];
 
-  constructor({
-    width,
-    height,
-    defaultState = BlackoutGameObject.STATES.DARK,
-  }) {
-    super({
-      width,
-      height,
-      visible: defaultState !== BlackoutGameObject.STATES.DARK,
-    });
-
-    this.destination = 0;
-    this.state = defaultState;
+    this.destroyJobs = new Jobs();
+    this.destroyJobs.addOnce([
+      this.blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
+        this.state[1] = 1;
+        this.markForUpdate(GameObjectPure.MARKS.SINGLE);
+        this.stream.continue();
+      }),
+      this.blackout.events.subscribe(Blackout.EVENTS.LIGHT, () => {
+        this.state[1] = 0;
+        this.markForUpdate(GameObjectPure.MARKS.SINGLE);
+        this.stream.continue();
+      }),
+    ]);
 
     this.stream = new Stream({
+      fn: () => this.updateStream(),
+      name: "Blackout",
       start: false,
-      fn: () => {
-        const progress = Game.dt * (SPEED / 1000);
-
-        if (this.destination > this.state) {
-          this.state = Math.min(1, this.state + progress);
-        } else if (this.destination < this.state) {
-          this.state = Math.max(0, this.state - progress);
-        } else {
-          this.stream.stop();
-          if (this.state === 0) {
-            this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);
-          }
-        }
-      },
-      name: "BlackoutGameObject",
     });
 
-    Game.stream.child(this.stream);
+    this.tetris.stream.child(this.stream);
+  }
 
-    this.unsubscribes = [
-      Blackout.events.subscribe(Blackout.EVENTS.LIGHT, () => {
-        this.stream.continue();
-        this.markForUpdate(GameObjectPure.MARKS.SINGLE);
-        this.destination = 0;
-      }),
-      Blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
-        this.stream.continue();
-        this.markForUpdate(GameObjectPure.MARKS.SINGLE);
-        this.destination = 1;
-      }),
-    ];
+  updateStream() {
+    const update = Game.dt * (1 / 1000);
 
-    if (this.state === 1) {
-      this.markForUpdate(GameObjectPure.MARKS.SINGLE);
+    this.state[0] = limitNumber(
+      0,
+      1,
+      this.state[1] > this.state[0]
+        ? this.state[0] + update
+        : this.state[0] - update
+    );
+
+    if (this.state[0] === this.state[1]) {
+      Game.jobs.afterUpdate.addOnce(() => {
+        this.stream.stop();
+        if (this.state[0] !== 1) {
+          this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);
+        }
+      });
     }
   }
 
+  /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
-    if (this.state === 0) {
-      return;
-    }
-
-    ctx.save();
-    ctx.fillStyle = `rgba(0,0,0, ${this.state})`;
+    ctx.fillStyle = `rgba(0,0,0,${this.state[0]})`;
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.restore();
   }
 
   destroy() {
     this.stream.destroy();
-    this.unsubscribes.forEach((fn) => fn());
+    this.destroyJobs.run();
     super.destroy();
   }
 }

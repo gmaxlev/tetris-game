@@ -7,8 +7,10 @@ import {
   Game,
   buildCanvasFont,
   Bezier,
+  toRGBA,
+  lighten,
+  resolveColor,
 } from "tiny-game-engine";
-import { Tetris } from "../../Tetris";
 import { Playground } from "../Playground";
 
 export class QueueGameObject extends GameObjectCanvas {
@@ -18,7 +20,10 @@ export class QueueGameObject extends GameObjectCanvas {
 
   static BRICK_SIZE = 18;
 
-  constructor() {
+  /**
+   * @param {Playground} playground
+   */
+  constructor(playground) {
     super({
       width: 100,
       height:
@@ -32,9 +37,11 @@ export class QueueGameObject extends GameObjectCanvas {
     this.gradient.addColorStop(0, "rgba(255,255,255,0)");
     this.gradient.addColorStop(0.8, "rgba(255,255,255,0.3)");
 
+    this.whiteColor = resolveColor("rgba(255,255,255)");
+
     this.curve = new Bezier([0, 2, 1]);
 
-    this.queue = Tetris.playground.queue.map((figure) =>
+    this.queue = playground.queue.map((figure) =>
       this.createFigureState(figure)
     );
 
@@ -43,12 +50,10 @@ export class QueueGameObject extends GameObjectCanvas {
 
     this.destroyingJobs = new Jobs();
     this.destroyingJobs.addOnce([
-      Tetris.playground.events.subscribe(Playground.EVENTS.MADE_FIGURE, () => {
+      playground.events.subscribe(Playground.EVENTS.MADE_FIGURE, () => {
         this.queue.shift();
         this.queue.push(
-          this.createFigureState(
-            Tetris.playground.queue[Tetris.playground.queue.length - 1]
-          )
+          this.createFigureState(playground.queue[playground.queue.length - 1])
         );
         this.topOffset = (this.size.height - this.getHeight(this.queue)) / 2;
         this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
@@ -60,7 +65,7 @@ export class QueueGameObject extends GameObjectCanvas {
       fn: () => this.updateStream(),
     });
 
-    Tetris.playground.stream.child(this.stream);
+    playground.stream.child(this.stream);
 
     this.markForUpdate(GameObjectCanvas.MARKS.SINGLE);
   }
@@ -112,6 +117,13 @@ export class QueueGameObject extends GameObjectCanvas {
     };
   }
 
+  getPosition() {
+    return {
+      x: 470,
+      y: 100,
+    };
+  }
+
   render() {
     this.ctx.fillStyle = this.gradient;
     this.ctx.fillRect(0, 0, this.size.width, this.size.height);
@@ -158,6 +170,10 @@ export class QueueGameObject extends GameObjectCanvas {
             const appearProgress = this.curve.getPoint(
               Math.max(0, progress[index].time - progress[index].offset) /
                 QueueGameObject.APPEAR_TIME
+            );
+
+            this.ctx.fillStyle = toRGBA(
+              lighten(figure.color, 0.2 * (index / 4))
             );
 
             this.ctx.globalAlpha = Math.min(1, appearProgress);

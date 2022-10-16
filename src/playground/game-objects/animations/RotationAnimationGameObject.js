@@ -6,7 +6,6 @@ import {
   Stream,
   toRGBA,
 } from "tiny-game-engine";
-import { Tetris } from "../../../Tetris";
 import { BRICK_SIZE } from "../BrickGameObject";
 
 /**
@@ -19,33 +18,49 @@ export class RotationAnimationGameObject extends GameObjectPure {
 
   static ROTATING_ANGLE = 45;
 
-  constructor() {
+  /**
+   * @param {Playground} playground
+   */
+  constructor(playground) {
     super();
-    this.rows = [];
+    this.bricks = [];
+
     this.stream = new Stream({
       fn: () => this.updateStream(),
-      name: "RotationsAnimationGameObject",
       start: false,
+      name: "RotationsAnimationGameObject",
     });
-    Tetris.playground.stream.child(this.stream);
+    playground.stream.child(this.stream);
   }
 
-  add(rows) {
-    this.rows.push({
-      progress: 0,
-      rows,
-    });
+  /**
+   * Adds animations
+   * @param {Array<{x: number, y: number, delay: number, color: *}>} bricks
+   */
+  add(bricks) {
+    this.bricks = this.bricks.concat(
+      bricks.map(({ x, y, color, delay = 0 }) => ({
+        progress: 0,
+        x,
+        y,
+        color,
+        delay,
+      }))
+    );
+
     this.markForUpdate(GameObjectPure.MARKS.SINGLE);
     this.stream.continue();
   }
 
   updateStream() {
-    this.rows = this.rows.filter(
-      ({ progress }) =>
-        progress / RotationAnimationGameObject.ROTATION_TIME <= 1
+    this.bricks = this.bricks.filter(
+      ({ progress, delay }) =>
+        Math.max(0, progress - delay) /
+          RotationAnimationGameObject.ROTATION_TIME <=
+        1
     );
 
-    if (this.rows.length === 0) {
+    if (this.bricks.length === 0) {
       Game.jobs.afterUpdate.addOnce(() => {
         this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);
       });
@@ -53,40 +68,43 @@ export class RotationAnimationGameObject extends GameObjectPure {
       return;
     }
 
-    this.rows.forEach((item) => {
+    this.bricks.forEach((item) => {
       item.progress += Game.dt;
     });
   }
 
-  render(ctx, offsetX, offsetY) {
-    this.rows.forEach((item) => {
-      const progress = Math.min(
+  render(ctx) {
+    this.bricks.forEach(({ x, y, color, progress }) => {
+      const selfProgress = Math.min(
         1,
-        item.progress / RotationAnimationGameObject.ROTATION_TIME
+        progress / RotationAnimationGameObject.ROTATION_TIME
       );
+
+      if (selfProgress === 1) {
+        return;
+      }
+
       const size =
         BRICK_SIZE -
         (BRICK_SIZE / RotationAnimationGameObject.ROTATING_DECREASING_BY) *
-          progress;
+          selfProgress;
 
-      item.rows.forEach(({ row, bricks }) => {
-        bricks.forEach(({ color }, index) => {
-          const x = index * BRICK_SIZE + offsetX;
-          const y = row * BRICK_SIZE + offsetY;
+      ctx.save();
 
-          ctx.save();
+      ctx.translate(x, y);
 
-          ctx.translate(x + BRICK_SIZE / 2, y + BRICK_SIZE / 2);
+      ctx.rotate(
+        RotationAnimationGameObject.ROTATING_ANGLE * selfProgress * PI_OVER_180
+      );
 
-          ctx.rotate(
-            RotationAnimationGameObject.ROTATING_ANGLE * progress * PI_OVER_180
-          );
-
-          ctx.fillStyle = toRGBA(lighten(color, progress));
-          ctx.fillRect(-size / 2, -size / 2, size, size);
-          ctx.restore();
-        });
-      });
+      ctx.fillStyle = toRGBA(lighten(color, selfProgress));
+      ctx.fillRect(-size / 2, -size / 2, size, size);
+      ctx.restore();
     });
+  }
+
+  destroy() {
+    this.stream.destroy();
+    super.destroy();
   }
 }

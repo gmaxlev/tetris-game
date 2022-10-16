@@ -17,6 +17,7 @@ export class Playground {
     TEST: Symbol("TEST"),
     BEFORE_CLEARING_ROWS: Symbol("BEFORE_CLEARING_ROWS"),
     UPDATE_LEVEL: Symbol("UPDATE_LEVEL"),
+    UPDATE_SCORE: Symbol("UPDATE_SCORE"),
   };
 
   static FALLING_SPEED = 100;
@@ -194,15 +195,129 @@ export class Playground {
   /**
    *
    * @param {number[]} lines
+   */
+  calculateScores(lines) {
+    const bricks = lines.reduce(
+      (previousValue, currentValue) =>
+        previousValue.concat(this.gameMap.getBricksInRow(currentValue)),
+      []
+    );
+
+    const brickToCollectionMap = new Map();
+
+    let collections = [];
+
+    const check = [
+      [0, -1],
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+    ];
+
+    for (let i = 0; i < bricks.length; i++) {
+      /** @type {Brick} */
+      const brick = bricks[i];
+
+      const { row, col } = brick.gameMapCell;
+
+      let existCollections = [];
+
+      for (let iCheck = 0; iCheck < check.length; iCheck++) {
+        const [colOffset, rowOffset] = check[iCheck];
+
+        const checkBrick = this.gameMap.getMapCell(
+          col + colOffset,
+          row + rowOffset
+        )?.brick;
+
+        if (!checkBrick || checkBrick.color !== brick.color) {
+          continue;
+        }
+
+        const collection = brickToCollectionMap.get(checkBrick);
+
+        if (collection) {
+          existCollections.push(collection);
+        }
+      }
+
+      existCollections = [...new Set(existCollections)];
+
+      if (existCollections.length) {
+        // eslint-disable-next-line no-loop-func
+        existCollections.forEach((collection) => {
+          collections = collections.filter((item) => item !== collection);
+        });
+
+        const joinedCollection = existCollections.reduce(
+          (newCollection, currentCollection) =>
+            newCollection.concat(currentCollection),
+          [brick]
+        );
+
+        joinedCollection.forEach((item) => {
+          brickToCollectionMap.set(item, joinedCollection);
+        });
+
+        collections.push(joinedCollection);
+      } else {
+        const newCollection = [brick];
+        brickToCollectionMap.set(brick, newCollection);
+        collections.push(newCollection);
+      }
+    }
+
+    let scores = 0;
+
+    collections = collections.map((collection) => {
+      const rows = [];
+      const cols = [];
+
+      collection.forEach((brick) => {
+        rows.push(brick.gameMapCell.row);
+        cols.push(brick.gameMapCell.col);
+      });
+      scores += collection.length * 5;
+
+      return {
+        width: Math.max(...cols) - Math.min(...cols) + 1,
+        height: Math.max(...rows) - Math.min(...rows) + 1,
+        x: Math.min(...cols),
+        y: Math.min(...rows),
+        scores: collection.length * 5,
+        color: collection[0].color,
+      };
+    });
+
+    return {
+      scores,
+      collections,
+    };
+  }
+
+  /**
+   * @param {number[]} lines
    * @returns {boolean}
    */
   clearRows(lines) {
+    const scores = this.calculateScores(lines);
+
     this.events.emit(Playground.EVENTS.BEFORE_CLEARING_ROWS, lines);
 
     this.destroyedRows += lines.length;
 
     this.figure.destroy();
     this.figure = null;
+
+    this.stream.child(
+      new StreamDelay({
+        fn: (stream) => {
+          this.events.emit(Playground.EVENTS.UPDATE_SCORE, scores);
+          stream.destroy();
+        },
+        delay: RotationAnimationGameObject.ROTATION_TIME,
+      })
+    );
 
     lines
       .reduce(
@@ -280,7 +395,7 @@ export class Playground {
     }
 
     if (this.figure.isBlockMoving()) {
-      // this.moveIntervalTime = this.moveInterval;
+      this.moveIntervalTime = this.moveInterval;
       return;
     }
 
