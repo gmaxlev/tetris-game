@@ -6,7 +6,6 @@ import {
   getRandomInt,
   toRGBA,
   getRandomElement,
-  pipe,
   lighten,
   createArrayFrom,
 } from "tiny-game-engine";
@@ -39,10 +38,7 @@ export class FlyingDotsAnimationsGameObject extends GameObjectPure {
     this.tetris = tetris;
     this.dots = [];
     this.colors = BRICKS_COLORS.map((color) =>
-      pipe(
-        lighten(color, FlyingDotsAnimationsGameObject.COLOR_LIGHTEN),
-        (value) => toRGBA(value)
-      )
+      toRGBA(lighten(color, FlyingDotsAnimationsGameObject.COLOR_LIGHTEN))
     );
 
     createArrayFrom(FlyingDotsAnimationsGameObject.DOTS_SIZE).forEach(() =>

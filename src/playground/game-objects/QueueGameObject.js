@@ -49,7 +49,7 @@ export class QueueGameObject extends GameObjectCanvas {
     this.topOffset = (this.size.height - this.getHeight(this.queue)) / 2;
 
     this.destroyingJobs = new Jobs();
-    this.destroyingJobs.addOnce([
+    this.destroyingJobs.add([
       playground.events.subscribe(Playground.EVENTS.MADE_FIGURE, () => {
         this.queue.shift();
         this.queue.push(

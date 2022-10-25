@@ -60,7 +60,7 @@ export class BrickGameObject extends GameObjectCanvas {
 
     this.opacity = 0;
 
-    this.destroyingJobs.addOnce([
+    this.destroyingJobs.add([
       this.brick.events.subscribe(Brick.EVENTS.MOVE, () => {
         this.markForUpdate(BrickGameObject.MARKS.MOVE, 1);
       }),
@@ -87,7 +87,7 @@ export class BrickGameObject extends GameObjectCanvas {
         fn: (value, stream) => {
           this.opacity = Math.min(1, value / BrickGameObject.APPEARING_DELAY);
           if (this.opacity >= 1) {
-            Game.jobs.afterUpdate.addOnce(() => {
+            Game.jobs.afterUpdate.add(() => {
               this.unmarkForUpdate(BrickGameObject.MARKS.APPEARING);
             });
             stream.destroy();

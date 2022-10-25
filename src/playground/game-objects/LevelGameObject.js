@@ -68,7 +68,7 @@ export class LevelGameObject extends GameObjectCanvas {
     }
 
     if (this.appearProgress === 1) {
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
         this.stream.stop();
       });

@@ -87,7 +87,7 @@ export class BackgroundGameObject extends GameObjectCanvas {
     this.yProgress = Math.min(1, value / 5000);
 
     if (this.yProgress === 1) {
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         stream.destroy();
         this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
       });

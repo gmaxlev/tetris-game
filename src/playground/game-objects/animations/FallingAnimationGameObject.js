@@ -59,7 +59,7 @@ export class FallingAnimationGameObject extends GameObjectPure {
 
     this.destroyJobs = new Jobs();
 
-    this.destroyJobs.addOnce([
+    this.destroyJobs.add([
       playground.events.subscribe(Playground.EVENTS.MADE_FIGURE, (figure) => {
         figure.events.subscribeOnce(Figure.EVENTS.FALLING_START, () => {
           this.addAnimation(figure);
@@ -158,7 +158,7 @@ export class FallingAnimationGameObject extends GameObjectPure {
 
     if (this.animations.length === 0) {
       this.stream.stop();
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         this.clearMarksForUpdate();
       });
       return;

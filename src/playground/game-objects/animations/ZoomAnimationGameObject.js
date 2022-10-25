@@ -80,7 +80,7 @@ export class ZoomAnimationGameObject extends GameObjectPure {
     );
 
     if (this.zooms.length === 0) {
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);
       });
       this.stream.stop();

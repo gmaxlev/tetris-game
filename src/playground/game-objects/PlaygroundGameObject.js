@@ -42,7 +42,7 @@ export class PlaygroundGameObject extends GameObjectCanvas {
 
     this.finishGameObject = null;
 
-    this.destroyingJobs.addOnce([
+    this.destroyingJobs.add([
       this.playground.events.subscribe(
         Playground.EVENTS.BEFORE_CLEARING_ROWS,
         () => {

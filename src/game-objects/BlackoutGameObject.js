@@ -19,7 +19,7 @@ export class BlackoutGameObject extends GameObjectPure {
     this.state = [1, 1];
 
     this.destroyJobs = new Jobs();
-    this.destroyJobs.addOnce([
+    this.destroyJobs.add([
       this.blackout.events.subscribe(Blackout.EVENTS.DARK, () => {
         this.state[1] = 1;
         this.markForUpdate(GameObjectPure.MARKS.SINGLE);
@@ -53,7 +53,7 @@ export class BlackoutGameObject extends GameObjectPure {
     );
 
     if (this.state[0] === this.state[1]) {
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         this.stream.stop();
         if (this.state[0] !== 1) {
           this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);

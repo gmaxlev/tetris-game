@@ -66,7 +66,7 @@ export class ScoreGameObject extends GameObjectCanvas {
       updateJumps === 0 &&
       this.circles.length === 0
     ) {
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         this.unmarkForUpdate(GameObjectCanvas.MARKS.SINGLE);
         this.stream.stop();
       });

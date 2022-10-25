@@ -27,7 +27,7 @@ export class ExplosionAnimationGameObject extends GameObjectPure {
     this.playground.stream.child(this.stream);
 
     this.destroyJobs = new Jobs();
-    this.destroyJobs.addOnce([
+    this.destroyJobs.add([
       this.playground.events.subscribe(
         Playground.EVENTS.BEFORE_CLEARING_ROWS,
         (rows) => this.addAnimation(rows)

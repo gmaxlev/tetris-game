@@ -28,7 +28,7 @@ export class FinishGameObject extends GameObjectCanvas {
     this.figure = figure;
 
     this.destrotingJobs = new Jobs();
-    this.destrotingJobs.addOnce(
+    this.destrotingJobs.add(
       this.figure.events.subscribe(Figure.EVENTS.MOVE, () => {
         this.markForUpdate(FinishGameObject.MARKS.MOVE, 1);
       })
@@ -41,7 +41,7 @@ export class FinishGameObject extends GameObjectCanvas {
         fn: (value, stream) => {
           this.opacity = Math.min(1, value / 200);
           if (this.opacity >= 1) {
-            Game.jobs.afterUpdate.addOnce(() => {
+            Game.jobs.afterUpdate.add(() => {
               this.unmarkForUpdate(FinishGameObject.MARKS.APPEARING);
             });
             stream.destroy();

@@ -95,7 +95,7 @@ export class FlyingAnimationBricksGameObject extends GameObjectPure {
     );
 
     if (this.bricks.length === 0) {
-      Game.jobs.afterUpdate.addOnce(() => {
+      Game.jobs.afterUpdate.add(() => {
         this.unmarkForUpdate(GameObjectPure.MARKS.SINGLE);
       });
       this.stream.stop();
